@@ -172,7 +172,7 @@ void main() {
 
 
 
-
+		//TODO moznost odstraneni upraveni (PROSIM nezapomenout jednou odstranit)
 		if(zelenaBarva==0){
 
 			//zjisteni jestli je barva ve vyseci nebo ne -> pokud je tak nastaveni alphy na 0.0
