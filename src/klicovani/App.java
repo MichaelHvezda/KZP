@@ -1,4 +1,4 @@
-package pokus2;
+package klicovani;
 
 import pom.LwjglWindow;
 

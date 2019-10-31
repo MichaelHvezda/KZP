@@ -1,4 +1,4 @@
-package pokus2;
+package klicovani;
 
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.GL_COLOR_BUFFER_BIT;
@@ -16,9 +16,6 @@ import static org.lwjgl.opengl.GL30.GL_FRAMEBUFFER;
 import static org.lwjgl.opengl.GL30.glBindFramebuffer;
 
 import java.awt.Color;
-import java.awt.Font;
-import java.awt.Graphics;
-import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.DoubleBuffer;
 
@@ -32,16 +29,10 @@ import org.lwjgl.glfw.GLFWWindowSizeCallback;
 import pom.AbstractRenderer;
 import lwjglutils.OGLBuffers;
 import lwjglutils.OGLRenderTarget;
-import lwjglutils.OGLTexImageFloat;
 import lwjglutils.OGLTextRenderer;
 import lwjglutils.OGLTexture2D;
 import lwjglutils.ShaderUtils;
-import lwjglutils.ToFloatArray;
-import transforms.Camera;
-import transforms.Mat4;
-import transforms.Mat4PerspRH;
-import transforms.Mat4Scale;
-import transforms.Vec3D;
+import transforms.*;
 
 
 /**
@@ -57,12 +48,13 @@ public class Renderer extends AbstractRenderer{
 	
 OGLBuffers buffers;
 	
-	int shaderProgram, locMat, cervenaBarva,zelenaBarva,modraBarva;
+	int shaderProgram, locMat, cervenaBarva,zelenaBarva,modraBarva,otoceni;
 	
 	OGLTexture2D texture, texture2;
 	float cervenaBarvaHodnota =0;
 	float zelenaBarvaHodnota = 0;
 	float modraBarvaHodnota = 0;
+	float otoceniHodnota=0;
 
 
 
@@ -247,12 +239,15 @@ OGLBuffers buffers;
 			//  Auto-generated catch block
 			e.printStackTrace();
 		}
-		
+
+
+		genericClass();
 		textureViewer = new OGLTexture2D.Viewer();
 		textRenderer = new OGLTextRenderer(width, height);
 		cervenaBarva = glGetUniformLocation(shaderProgram, "cervenaBarva");
 		zelenaBarva = glGetUniformLocation(shaderProgram, "zelenaBarva");
 		modraBarva = glGetUniformLocation(shaderProgram, "modraBarva");
+		otoceni = glGetUniformLocation(shaderProgram, "otoceni");
 }
 	
 	@Override
@@ -270,6 +265,7 @@ OGLBuffers buffers;
 		glUniform1f(cervenaBarva, cervenaBarvaHodnota);
 		glUniform1f(zelenaBarva, zelenaBarvaHodnota);
 		glUniform1f(modraBarva, modraBarvaHodnota);
+		glUniform1f(otoceni, otoceniHodnota);
 
 		
 		// set our render target (texture)
@@ -355,5 +351,62 @@ OGLBuffers buffers;
 
 		textRenderer.addStr2D(width-50, height-3,  "B: "+modraBarvaHodnota);
 		textRenderer.draw();
+	}
+
+	private void genericClass(){
+
+		otoceniHodnota =vypocetOtoceni(rgbtoYCrCb(getColor(texture)));
+
+	}
+
+	//rgb: (116.0,197.0, 4.0,255.0)
+	//yuv: ( 0.6,-0.1,-0.3, 1.0)
+	//otoceni: -10.433102
+
+	//vypocet otoceni
+	private float vypocetOtoceni(Point3D a){
+
+
+		//vypocet otoceni tak aby zadana hodnota po otoceni lezela na ose X
+		return (float) (Math.PI+(Math.atan(-a.getZ()/a.getY())));
+	}
+	private double vypocetX(double cr, double cb, double otoceni) {
+		return (cr * Math.cos(otoceni) - cb * Math.sin(otoceni));
+	}
+
+	private double vypocetZ(double cr, double cb, double otoceni) {
+		return (cb *  Math.cos(otoceni) + cr *  Math.sin(otoceni));
+	}
+
+	private Col getColor(OGLTexture2D text){
+		return getColor(text,200,200);
+	}
+
+	private Col getColor(OGLTexture2D text, int x,int y){
+		return new Col(text.toBufferedImage().getRGB(x,y));
+	}
+
+	private Point3D rgbtoYCrCb(Col colorp) {
+		//rozdeleni podle barev + prepocitani do rozsahu 0 az 255
+		//nenasel jsem jiny vzorec -> moznost nahrazeni lepsim a dokonalejsim
+		double r = (colorp.getR() * 255);
+		double g = ( colorp.getG() * 255);
+		double b = ( colorp.getB() * 255);
+
+		//prepocitani barev na YUV
+		double y = ((0.299*r + 0.587*g + 0.114*b));
+		double cr = ((128 + 0.500*r - 0.419*g - 0.081*b)); //V
+		double cb = ((128 - 0.169*r - 0.331*g + 0.500*b));  //U
+
+
+		//propocitani y do rozsahu 0 az 1
+		y = y/255;
+		//prepocitani cr do rozsahu -0.5 az 0.5
+		cr = ((cr / 255) - 0.5);
+		//prepocitani cb do rozsahu -0.5 az 0.5
+		cb = ((cb/255) - 0.5);
+
+		//vraceni hodnot
+		return new Point3D(y, cr, cb);
 	}
 }

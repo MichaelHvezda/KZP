@@ -8,6 +8,7 @@ uniform sampler2D textureIP;
 uniform float cervenaBarva;
 uniform float zelenaBarva;
 uniform float modraBarva;
+uniform float otoceni;
 
 
 vec3 YCrCbtoRGB(float y1,float cr1,float cb1){
@@ -105,7 +106,7 @@ void main() {
 	float cb = yuv.z; //U
 
 	//promena pro oteceni (moznost vytknout/vypocitat/dodat externě)
-	float otoceni = 1.72;
+	//float otoceni = 1.72;
 
 
 	//otoceni os a prepocitani je na X a Z
@@ -135,10 +136,11 @@ void main() {
 		kfg1 = x - pom1;
 	}
 	if(kfg1==0){
+		// vykresleni nezmeneho pixelu
 		outColor= vec4(outColor);
 	}
 
-	//urceni jestli se bude odstranovat pixel a nahrazovat pozadim nebo se bude prekreslovat, popripade zustane nezmenen
+	//urceni jestli se bude odstranovat pixel a nahrazovat pozadim nebo se bude prekreslovat
 	if(kfg==0 && kfg1 >0){
 		//posunuti barvy do hranicnice podle osy x
 		x = x - kfg1;
@@ -151,6 +153,7 @@ void main() {
 		vec3 col = YCrCbtoRGB(y, newCr, newCb);
 
 
+		//TODO moznost odstraneni upraveni (PROSIM nezapomenout jednou odstranit)
 		//vraceni vysledne textury
 		if(cervenaBarva==0){
 			outColor = vec4(col,1);
