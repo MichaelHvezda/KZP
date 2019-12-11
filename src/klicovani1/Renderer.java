@@ -1,4 +1,4 @@
-package klicovani;
+package klicovani1;
 
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.GL_COLOR_BUFFER_BIT;
@@ -222,7 +222,7 @@ OGLBuffers buffers;
 
 		createBuffers();
 		
-		shaderProgram = ShaderUtils.loadProgram("/mujShader/mujStart");
+		shaderProgram = ShaderUtils.loadProgram("/mujShader1/mujStart1");
 		
 		glUseProgram(this.shaderProgram);
 		

@@ -1,4 +1,4 @@
-package klicovani;
+package klicovani1;
 
 import pom.LwjglWindow;
 

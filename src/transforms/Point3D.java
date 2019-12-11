@@ -13,7 +13,7 @@ import java.util.Optional;
 
 public class Point3D {
 	private final double x, y, z, w;
-
+	private int index = -1;
 	/**
 	 * Creates a homogeneous point representing the origin 
 	 */
@@ -348,7 +348,7 @@ public class Point3D {
 	 */
 	@Override
 	public String toString() {
-		return toString("%4.1f");
+		return toString("%4.2f");
 	}
 	
 	/**
@@ -362,5 +362,18 @@ public class Point3D {
 	 */
 	public String toString(final String format) {
 		return String.format(Locale.US, "(" + format + "," + format + "," + format + "," + format + ")", x, y, z, w);
+	}
+
+	public Double getSquareOfDistance(Point3D anotherPoint){
+		return  (x - anotherPoint.x) * (x - anotherPoint.x)
+				+ (y - anotherPoint.y) *  (y - anotherPoint.y)
+				+ (z - anotherPoint.z) *  (z - anotherPoint.z);
+	}
+	public int getIndex() {
+		return index;
+	}
+
+	public void setIndex(int index) {
+		this.index = index;
 	}
 }
