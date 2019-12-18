@@ -9,21 +9,16 @@ import org.lwjgl.glfw.*;
 import pom.AbstractRenderer;
 import transforms.Col;
 import transforms.Point3D;
-import transforms.Tuple3;
 
 import java.awt.*;
-import java.awt.image.AreaAveragingScaleFilter;
 import java.io.IOException;
 import java.nio.DoubleBuffer;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.opengl.GL20.glUniform3i;
 import static org.lwjgl.opengl.GL30.*;
 
 
@@ -215,7 +210,8 @@ OGLBuffers buffers;
 		glClearColor(0,0,0,1);
 
 		createBuffers();
-		
+
+		//nahrani shaderu
 		shaderProgram = ShaderUtils.loadProgram("/mujShader2/mujStart2");
 		
 		glUseProgram(this.shaderProgram);
@@ -233,17 +229,20 @@ OGLBuffers buffers;
 			//  Auto-generated catch block
 			e.printStackTrace();
 		}
+
+		//umisteni promenych
 		cent1 = glGetUniformLocation(shaderProgram, "cent1");
 		cent2 = glGetUniformLocation(shaderProgram, "cent2");
 		cent3 = glGetUniformLocation(shaderProgram, "cent3");
 
-		genericClass();
+		nastaveniShaderu();
+
 		textureViewer = new OGLTexture2D.Viewer();
 		textRenderer = new OGLTextRenderer(width, height);
 		//cervenaBarva = glGetUniformLocation(shaderProgram, "cervenaBarva");
 		//zelenaBarva = glGetUniformLocation(shaderProgram, "zelenaBarva");
 		//modraBarva = glGetUniformLocation(shaderProgram, "modraBarva");
-		otoceni = glGetUniformLocation(shaderProgram, "otoceni");
+		//otoceni = glGetUniformLocation(shaderProgram, "otoceni");
 
 
 
@@ -317,10 +316,11 @@ OGLBuffers buffers;
 		textRenderer.draw();
 	}
 
-	private void genericClass(){
+	private void nastaveniShaderu(){
 
 		ArrayList list = new ArrayList<Point3D>();
 
+		//prohledani textury pro vytvoreni k-means
 		for(int i = 0; i<texture.getWidth();i=i+50){
 			System.out.println(i);
 			for(int u = 0; u<texture.getHeight();u=u+50){
@@ -330,18 +330,23 @@ OGLBuffers buffers;
 		}
 
 
+		//vytvoreni k-means
 		KMeans kMeans = new KMeans(list,3);
 		ArrayList<Cluster> pointsClusters = kMeans.getPointsClusters();
 
-        for (int i = 0 ; i < kMeans.k; i++)
-        	System.out.println("Cluster " + i + ": " + pointsClusters.get(i));
+		//vypsani k-means do konzole
+        for (int i = 0 ; i < kMeans.k; i++){
+			System.out.println("Cluster " + i + ": " + pointsClusters.get(i));
+		}
+
            //System.out.println("Cluster " + i + ": " + pointsClusters.get(i));
 
 
+		//serazeni seznamu
 		ArrayList<Point3D> listr =sort(kMeans.getPointsClusters());
 
-		System.out.println();
 
+		//odeslani centoid do shaderu
 		glUniform3fShort(cent1,listr.get(0));
 		glUniform3fShort(cent2,listr.get(1));
 		glUniform3fShort(cent3,listr.get(2));
@@ -358,6 +363,7 @@ OGLBuffers buffers;
 
 
 
+	//prepocet na hsb barevny model
 	private Point3D rgbToHsb(Col a)	{
 		float r = ((float)a.getR());
 		float g = ((float)a.getG());
@@ -392,6 +398,7 @@ OGLBuffers buffers;
 		return new Point3D((float)h, (float)(s*100.0), (float)(maxn*100.0));
 	}
 
+	//serazeni klastru od nejmensiho
 	private ArrayList<Point3D> sort(ArrayList<Cluster> a){
 		ArrayList<Point3D> pointList = new ArrayList<>();
 
@@ -409,6 +416,7 @@ OGLBuffers buffers;
 
 	}
 
+	//pomocna promena pro posilani promenych do shaderu
 	private void glUniform3fShort(int a,Point3D b){
 		System.out.println(b);
 		glUniform3f(a,

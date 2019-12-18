@@ -79,22 +79,28 @@ float small(float a,float b, float c){
 
 void main() {
 
+	//zjisteni barvy popredi a pozadi
 	outColor = texture(textureID, texCoord);
 	vec4 outColor1 = texture(textureIP, texCoord);
 
+	//prepocet popredi
 	vec3 hsb = RgbToHsb(outColor.rgb);
 
+	//zjisteni vzdalenosti od centroid
 	float jedna = vzdalenost(hsb,cent1);
 	float dva = vzdalenost(hsb,cent2);
 	float tri = vzdalenost(hsb,cent3);
 
 
 
+	//zjisteni nejmensi vzdalenosti
 	float smal = small(jedna,dva,tri);
 
+	//urceni jestli zobrazovat popredi nebo pozadi
 	if(jedna==smal){
 		outColor;
 	}
+	//druha hodnota vzdy ta, ktera se klicuje
 	if(dva==smal){
 		outColor=outColor1;
 	}

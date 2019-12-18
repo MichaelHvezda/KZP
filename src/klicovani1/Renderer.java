@@ -241,7 +241,7 @@ OGLBuffers buffers;
 		}
 
 
-		genericClass();
+		nastaveniShaderu();
 		textureViewer = new OGLTexture2D.Viewer();
 		textRenderer = new OGLTextRenderer(width, height);
 		cervenaBarva = glGetUniformLocation(shaderProgram, "cervenaBarva");
@@ -353,7 +353,7 @@ OGLBuffers buffers;
 		textRenderer.draw();
 	}
 
-	private void genericClass(){
+	private void nastaveniShaderu(){
 
 		otoceniHodnota =vypocetOtoceni(rgbtoYCrCb(getColor(texture)));
 
