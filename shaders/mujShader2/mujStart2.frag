@@ -3,7 +3,12 @@ out vec4 outColor; // output from the fragment shader
 in vec2 texCoord;
 //in vec4 color;
 vec4 color;
+
+
+// pozadí
 uniform sampler2D textureID;
+
+// popredi
 uniform sampler2D textureIP;
 //uniform float cervenaBarva;
 //uniform float zelenaBarva;

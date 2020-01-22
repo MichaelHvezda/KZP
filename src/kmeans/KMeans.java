@@ -4,7 +4,7 @@ import transforms.Point3D;
 
 import java.io.*;
 import java.util.*;
-
+//vzato z  http://moderntone.blogspot.com/2013/04/a-java-implementation-of-k-means.html
 public class KMeans {
 
     private static final Random random = new Random();

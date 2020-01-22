@@ -4,14 +4,17 @@ import kmeans.Cluster;
 import kmeans.KMeans;
 
 import lwjglutils.*;
+import opencvutils.VideoGrabber;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.glfw.*;
 import pom.AbstractRenderer;
 import transforms.Col;
 import transforms.Point3D;
 
+import helpers.OpenCVImageFormat;
 import java.awt.*;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.DoubleBuffer;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -20,7 +23,6 @@ import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL30.*;
-
 
 /**
 * 
@@ -42,6 +44,8 @@ OGLBuffers buffers;
 	float zelenaBarvaHodnota = 0;
 	float modraBarvaHodnota = 0;
 	float otoceniHodnota=0;
+	private VideoGrabber videoGrabber;
+	private OpenCVImageFormat videoImageFormat;
 
 
 
@@ -220,15 +224,39 @@ OGLBuffers buffers;
 		
 		renderTarget = new OGLRenderTarget(width, height);
 
+		/*
+		videoGrabber = new VideoGrabber("./res/textures/video1.mp4");
+		System.out.println("Video FPS: " + videoGrabber.getFPS());
+		videoImageFormat = new OpenCVImageFormat(3);
 
-		
+
+			ByteBuffer buffer = videoGrabber.grabImage();
+			if (buffer != null) {
+				System.out.format("%.1f s / %.1f s", videoGrabber.getCurrentVideoTime(), videoGrabber.getTotalVideoTime());
+				System.out.println();
+				if (texture == null) {
+					texture = new OGLTexture2D(videoGrabber.getWidth(), videoGrabber.getHeight(), videoImageFormat, buffer);
+				} else {
+					texture.setTextureBuffer(videoImageFormat, buffer);
+				}
+				//texture.bind(shaderProgram, "texture", 0);
+			} else {
+				videoGrabber.rewind();
+			}
+*/
 		try {
+
+
+
+
 			texture = new OGLTexture2D("textures/foto.jpg");
 			texture2= new OGLTexture2D("textures/back1.jpg");
 		} catch (IOException e) {
 			//  Auto-generated catch block
 			e.printStackTrace();
 		}
+
+
 
 		//umisteni promenych
 		cent1 = glGetUniformLocation(shaderProgram, "cent1");
@@ -321,9 +349,9 @@ OGLBuffers buffers;
 		ArrayList list = new ArrayList<Point3D>();
 
 		//prohledani textury pro vytvoreni k-means
-		for(int i = 0; i<texture.getWidth();i=i+50){
+		for(int i = 0; i<texture.getWidth();i=i+100){
 			System.out.println(i);
-			for(int u = 0; u<texture.getHeight();u=u+50){
+			for(int u = 0; u<texture.getHeight();u=u+100){
 				list.add(new Point3D(rgbToHsb(new Col(texture.toBufferedImage().getRGB(i,u)))));
 				System.out.print(".");
 			}
