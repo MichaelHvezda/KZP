@@ -116,17 +116,7 @@ void main() {
 
 
 
-
-
-
-
-
 	//outColor=vec4(barva(jedna,dva,tri),1.0);
-
-
-
-
-
 
 
 
