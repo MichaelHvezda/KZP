@@ -60,6 +60,17 @@ public class Point3D {
 	}
 
 	/**
+	 *
+	 * @param a
+	 */
+	public Point3D(final Col a){
+		this.x = a.getR();
+		this.y = a.getG();
+		this.z = a.getB();
+		this.w = 1;
+	}
+
+	/**
 	 * Creates a homogeneous point representing a 3D affine point defined by the
 	 * given vector from origin
 	 * 
@@ -365,9 +376,19 @@ public class Point3D {
 	}
 
 	public Double getSquareOfDistance(Point3D anotherPoint){
-		return  (x - anotherPoint.x) * (x - anotherPoint.x)
-				+ (y - anotherPoint.y) *  (y - anotherPoint.y)
-				+ (z - anotherPoint.z) *  (z - anotherPoint.z);
+		double pomZaporna;
+		double pomKladna = naDruhou(x,anotherPoint.x) + naDruhou(y,anotherPoint.y) + naDruhou(z,anotherPoint.z);
+		if(x<anotherPoint.x){
+			pomZaporna = naDruhou(x,anotherPoint.x-360)	+ naDruhou(y,anotherPoint.y) + naDruhou(z,anotherPoint.z);
+		}else {
+			pomZaporna = naDruhou(x-360,anotherPoint.x)	+ naDruhou(y,anotherPoint.y) + naDruhou(z,anotherPoint.z);
+		}
+
+		if(pomKladna<=pomZaporna){
+			return pomKladna;
+		}else {
+			return pomZaporna;
+		}
 	}
 	public int getIndex() {
 		return index;
@@ -375,5 +396,9 @@ public class Point3D {
 
 	public void setIndex(int index) {
 		this.index = index;
+	}
+
+	private double naDruhou(double firstNumber, double scndNumber){
+		return ((firstNumber - scndNumber) * (firstNumber - scndNumber));
 	}
 }

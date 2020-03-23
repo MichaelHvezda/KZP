@@ -17,7 +17,7 @@ uniform float otoceni;
 uniform vec3 cent1;
 uniform vec3 cent2;
 uniform vec3 cent3;
-
+uniform vec3 colorBack;
 vec3 RgbToHsb(vec3 colorp){
 float r = (colorp.r);
 float g = (colorp.g);
@@ -54,10 +54,27 @@ vec3 vysledek = vec3(h, s*100.0, maxn*100.0);
 return vysledek;
 }
 
+float naDruhou(float firstNumber, float scndNumber){
+	return ((firstNumber - scndNumber) * (firstNumber - scndNumber));
+}
 float vzdalenost(vec3 col,vec3 cent){
-	return (((col.x - cent.x) * (col.x - cent.x))
-	+ ((col.y - cent.y) *  (col.y - cent.y))
-	+ ((col.z - cent.z) *  (col.z - cent.z)));
+	float pomZaporna;
+	float pomKladna = naDruhou(col.x,cent.x) + naDruhou(col.y,cent.y) + naDruhou(col.z,cent.z);
+	if(col.x<cent.x){
+		pomZaporna = naDruhou(col.x,cent.x-360) + naDruhou(col.y,cent.y) + naDruhou(col.z,cent.z);
+	}else {
+		pomZaporna = naDruhou(col.x-360,cent.x) + naDruhou(col.y,cent.y) + naDruhou(col.z,cent.z);
+	}
+
+	if(pomKladna<=pomZaporna){
+		return pomKladna;
+	}else {
+		return pomZaporna;
+	}
+
+	//return (((col.x - cent.x) * (col.x - cent.x))
+	//+ ((col.y - cent.y) *  (col.y - cent.y))
+	//+ ((col.z - cent.z) *  (col.z - cent.z)));
 }
 
 
@@ -90,27 +107,49 @@ void main() {
 
 	//prepocet popredi
 	vec3 hsb = RgbToHsb(outColor.rgb);
+	vec3 colBack = RgbToHsb(colorBack);
 
 	//zjisteni vzdalenosti od centroid
+	float jednaBack = vzdalenost(colBack,cent1);
+	float dvaBack = vzdalenost(colBack,cent2);
+	float triBack = vzdalenost(colBack,cent3);
+
+	//zjisteni vzdalenosti od centroid pozadi
 	float jedna = vzdalenost(hsb,cent1);
 	float dva = vzdalenost(hsb,cent2);
 	float tri = vzdalenost(hsb,cent3);
 
 
-
 	//zjisteni nejmensi vzdalenosti
 	float smal = small(jedna,dva,tri);
+	float smalBack = small(jednaBack,dvaBack,triBack);
 
 	//urceni jestli zobrazovat popredi nebo pozadi
 	if(jedna==smal){
-		outColor;
+		if(jednaBack==smalBack){
+			outColor = outColor1;
+		}else{
+			outColor;
+		}
+
 	}
 	//druha hodnota vzdy ta, ktera se klicuje
 	if(dva==smal){
-		outColor=outColor1;
+
+		if(dvaBack==smalBack){
+			outColor = outColor1;
+		}else{
+			outColor;
+		}
+
+
 	}
 	if(tri==smal){
-		outColor;
+		if(triBack==smalBack){
+			outColor = outColor1;
+		}else{
+			outColor;
+		}
 	}
 
 

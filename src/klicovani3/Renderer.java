@@ -1,14 +1,18 @@
 package klicovani3;
 
+import helpers.OpenCVImageFormat;
 import lwjglutils.*;
+import opencvutils.VideoGrabber;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.glfw.*;
+import org.opencv.core.Point3;
 import pom.AbstractRenderer;
 import transforms.Col;
 import transforms.Point3D;
 
 import java.awt.*;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.DoubleBuffer;
 
 import static org.lwjgl.glfw.GLFW.*;
@@ -31,7 +35,7 @@ public class Renderer extends AbstractRenderer{
 	private boolean prebarveniBool = false;
 
 	private OGLBuffers buffers;
-	
+	private boolean pomocnaBul;
 	private int shaderProgram, locMat, cervenaBarva,zelenaBarva,modraBarva,otoceni,vysecBarva,vysecKlic;
 
 	private OGLTexture2D texture, texture2;
@@ -50,7 +54,9 @@ public class Renderer extends AbstractRenderer{
 	private VysecKalkulator vysecKalkulator = new VysecKalkulator();
 	private OGLRenderTarget renderTarget;
 	private boolean draw = false;
-
+	private VideoGrabber videoGrabber;
+	private OpenCVImageFormat videoImageFormat;
+	ByteBuffer buffer;
 	private OGLTexture2D.Viewer textureViewer;
 	
 	private GLFWKeyCallback   keyCallback = new GLFWKeyCallback() {
@@ -84,6 +90,9 @@ public class Renderer extends AbstractRenderer{
 					break;
 				case GLFW_KEY_M:
 					prebarveniBool=!(prebarveniBool);
+					break;
+				case GLFW_KEY_L:
+					pomocnaBul=!(pomocnaBul);
 					break;
 
 
@@ -216,6 +225,14 @@ public class Renderer extends AbstractRenderer{
 
 		glClearColor(0,0,0,1);
 
+		videoGrabber = new VideoGrabber("./res/textures/video2.mov");
+		System.out.println("Video FPS: " + videoGrabber.getFPS());
+		System.out.println("ss " + videoGrabber.getTotalFrameCount());
+		System.out.println(videoGrabber.grabImage());
+		videoImageFormat = new OpenCVImageFormat(3);
+		createBuffers();
+		buffer = videoGrabber.grabImage();
+
 		createBuffers();
 		
 		shaderProgram = ShaderUtils.loadProgram("/mujShader3/mujStart1");
@@ -225,11 +242,25 @@ public class Renderer extends AbstractRenderer{
 
 		
 		renderTarget = new OGLRenderTarget(width, height);
+		if (buffer != null) {
+			System.out.format("%.1f s / %.1f s", videoGrabber.getCurrentVideoTime(), videoGrabber.getTotalVideoTime());
+			System.out.println();
+			//System.out.println( videoGrabber.getCurrentVideoTime()+"s / "+ videoGrabber.getTotalVideoTime()+ "s ");
+			if (texture == null) {
+				texture = new OGLTexture2D(videoGrabber.getWidth(), videoGrabber.getHeight(), videoImageFormat, buffer);
+			} else {
 
+				texture.setTextureBuffer(videoImageFormat, buffer);
+			}
+			//texture.bind(shaderProgram, "texture", 0);
+		} else {
+			System.out.println("sdadada");
+			videoGrabber.rewind();
+		}
 
 		
 		try {
-			texture = new OGLTexture2D("textures/foto.jpg");
+			//texture = new OGLTexture2D("textures/foto.jpg");
 			texture2= new OGLTexture2D("textures/back1.jpg");
 		} catch (IOException e) {
 			//  Auto-generated catch block
@@ -255,9 +286,30 @@ public class Renderer extends AbstractRenderer{
 		
 		glViewport(0, 0, width, height);
 
+		if(!pomocnaBul){
+			nastaveniShaderu();
+		}
 
-		nastaveniShaderu();
 
+		if(pomocnaBul){
+			// bind and draw
+			buffers.draw(GL_TRIANGLES, shaderProgram);
+			if (buffer != null) {
+				System.out.format("%.1f s / %.1f s", videoGrabber.getCurrentVideoTime(), videoGrabber.getTotalVideoTime());
+				System.out.println();
+				//System.out.println( videoGrabber.getCurrentVideoTime()+"s / "+ videoGrabber.getTotalVideoTime()+ "s ");
+				if (texture == null) {
+					texture = new OGLTexture2D(videoGrabber.getWidth(), videoGrabber.getHeight(), videoImageFormat, buffer);
+				} else {
+
+					texture.setTextureBuffer(videoImageFormat, buffer);
+				}
+				//texture.bind(shaderProgram, "texture", 0);
+			} else {
+				System.out.println("sdadada");
+				videoGrabber.rewind();
+			}
+		}
 
 		// set the current shader to be used
 		glUseProgram(shaderProgram);
@@ -281,10 +333,6 @@ public class Renderer extends AbstractRenderer{
 		texture2.bind(shaderProgram,"textureIP",1);
 		
 
-		
-		// bind and draw
-		buffers.draw(GL_TRIANGLES, shaderProgram);
-		
 
 		
 		// set the default render target (screen)
@@ -320,6 +368,8 @@ public class Renderer extends AbstractRenderer{
 
 		textRenderer.addStr2D(width-50, height-3,  "B: "+modraBarvaHodnota);
 		textRenderer.draw();
+
+		buffer = videoGrabber.grabImage();
 	}
 
 	private void nastaveniShaderu(){
@@ -331,7 +381,14 @@ public class Renderer extends AbstractRenderer{
 		int vyska = (int)(texture.getWidth() * pomerVysky);
 		int sirka = (int)(texture.getHeight() * pomerSirky);
 		if (!(ox==0 && oy==0)){
+
+			Point3D ssss = rgbtoYCrCb(getColor(texture,vyska,sirka));
+			float ddd = vypocetOtoceni(ssss);
+			System.out.println("yrb" + ssss.mul(100) + " otoceni " + ddd + " x: " + vypocetX(ssss.getY(),ssss.getZ(),ddd) + " z: " + vypocetZ(ssss.getY(),ssss.getZ(),ddd) + " xu: " + vypocetX(ssss.getY()-0.1,ssss.getZ()-0.1,ddd) + " zu: " + vypocetZ(ssss.getY()-0.1,ssss.getZ()-0.1,ddd));
+
 			vysecKalkulator.vlozHodnotu(vypocetOtoceni(rgbtoYCrCb(getColor(texture,vyska,sirka))));
+
+
 
 		}
 
@@ -355,10 +412,11 @@ public class Renderer extends AbstractRenderer{
 
 	//vypocet otoceni
 	private float vypocetOtoceni(Point3D a){
+		//vypocet otoceni tak aby zadana hodnota po otoceni lezela na ose Z
+		return (float) (((Math.PI)+(Math.atan((-a.getZ()+0.1)/(a.getY()-0.1)))));
 
-
-		//vypocet otoceni tak aby zadana hodnota po otoceni lezela na ose X
-		return (float) ((Math.PI)+(Math.atan(-a.getZ()/a.getY())));
+		//pro osu X
+		//return (float) (((Math.PI*2)+(Math.atan((a.getY())/a.getZ()))));
 	}
 	private double vypocetX(double cr, double cb, double otoceni) {
 		return (cr * Math.cos(otoceni) - cb * Math.sin(otoceni));
@@ -390,7 +448,6 @@ public class Renderer extends AbstractRenderer{
 		double cr = ((128 + 0.500*r - 0.419*g - 0.081*b)); //V
 		double cb = ((128 - 0.169*r - 0.331*g + 0.500*b));  //U
 
-
 		//propocitani y do rozsahu 0 az 1
 		y = y/255;
 		//prepocitani cr do rozsahu -0.5 az 0.5
@@ -399,6 +456,7 @@ public class Renderer extends AbstractRenderer{
 		cb = ((cb/255) - 0.5);
 
 		//vraceni hodnot
+		//System.out.println(y + " " + cr + " " + cb);
 		return new Point3D(y, cr, cb);
 	}
 }

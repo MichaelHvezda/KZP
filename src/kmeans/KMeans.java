@@ -12,28 +12,8 @@ public class KMeans {
     public final int k;
     private Clusters pointClusters; //the k Clusters
 
-    /**@param pointsFile : the csv file for input points
-     * @param k : number of clusters
-     */
-    public KMeans(String pointsFile, int k) {
-        if (k < 2)
-            new Exception("The value of k should be 2 or more.").printStackTrace();
-        this.k = k;
-        ArrayList<Point3D> points = new ArrayList<>();
-        try {
-            InputStreamReader read = new InputStreamReader(
-                    new FileInputStream(pointsFile), "UTF-8");
-            BufferedReader reader = new BufferedReader(read);
-            String line;
-            while ((line = reader.readLine()) != null)
-                points.add(getPointByLine(line));
-            reader.close();
 
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        this.allPoints = (points);
-    }
+
 
     public KMeans(ArrayList<Point3D> points, int k) {
         if (k < 2)
@@ -43,11 +23,7 @@ public class KMeans {
         this.allPoints = (points);
     }
 
-    private Point3D getPointByLine(String line) {
-        String[] xyz = line.split(",");
-        return new Point3D(Double.parseDouble(xyz[0]),
-                Double.parseDouble(xyz[1]), Double.parseDouble(xyz[2]));
-    }
+
 
     /**step 1: get random seeds as initial centroids of the k clusters
      */
@@ -102,11 +78,5 @@ public class KMeans {
         return pointClusters;
     }
 
-//    public static void main(String[] args) {
-//        String pointsFilePath = "files/randomPoints.csv";
-//        KMeans kMeans = new KMeans(pointsFilePath, 6);
-//        List<Cluster> pointsClusters = kMeans.getPointsClusters();
-//        for (int i = 0 ; i < kMeans.k; i++)
-//            System.out.println("Cluster " + i + ": " + pointsClusters.get(i));
-//    }
+
 }

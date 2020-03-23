@@ -104,8 +104,11 @@ void main() {
 
 	//rozdeleni yuv do promenych
 	float y = yuv.x;
-	float cr = yuv.y; //V
-	float cb = yuv.z; //U
+	//float cr = yuv.y; //V
+	//float cb = yuv.z; //U
+
+	float cr = yuv.y - 0.1; //V
+	float cb = yuv.z - 0.1; //U
 
 	//promena pro oteceni (moznost vytknout/vypocitat/dodat externě)
 	//float otoceni = 1.72;
@@ -130,7 +133,7 @@ void main() {
 	if (x < pom){
 		kfg = 0.0;
 	}else {
-		kfg = x - pom;
+		kfg = x - pom ;
 	}
 
 	//porovnani osy x a pom promene -> kfg nikdy nebude mensi nezly 0.0
@@ -155,16 +158,13 @@ void main() {
 		newCb = VypocetZ(x, z, -otoceni);
 
 		//prevrzeni nove barvy do RGB
+		//vec3 col = YCrCbtoRGB(y, newCr+0.1, newCb+0.1);
+
 		vec3 col = YCrCbtoRGB(y, newCr, newCb);
 
-
-		//TODO moznost odstraneni upraveni (PROSIM nezapomenout jednou odstranit)
 		//vraceni vysledne textury
-		if(cervenaBarva==0){
-			outColor = vec4(col,1-kfg1*2.1);
-		}else{
-			outColor = vec4(col,1);
-		}
+		outColor = vec4(col,1-kfg1*2.1);
+
 
 		float outA = outColor.w + outColor1.w * (1.0f - outColor.w);
 		outColor = vec4((outColor.rgb * outColor.w + outColor1.rgb * outColor1.w * (1.0f - outColor.w)) / outA, outA);;
@@ -175,7 +175,7 @@ void main() {
 	}else{
 
 		//vymezeni pro nepocitani s tmavou a velmi svetlou barvou/hodnotami
-		if (0.15 < y && y < 0.85){
+		if (0.20 < y && y < 0.85){
 			kfg = kfg;
 
 		}else {
@@ -183,9 +183,6 @@ void main() {
 			kfg = 0;
 		}
 
-
-
-		//TODO moznost odstraneni upraveni (PROSIM nezapomenout jednou odstranit)
 
 
 		//zjisteni jestli je barva ve vyseci nebo ne -> pokud je tak nastaveni alphy na 0.0

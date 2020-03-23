@@ -1,8 +1,8 @@
 package klicovani2;
 
-import kmeans.Cluster;
-import kmeans.KMeans;
 
+import kmeaMuj.Claster;
+import kmeaMuj.KMeans;
 import lwjglutils.*;
 import opencvutils.VideoGrabber;
 import org.lwjgl.BufferUtils;
@@ -12,7 +12,10 @@ import transforms.Col;
 import transforms.Point3D;
 
 import helpers.OpenCVImageFormat;
+
+import javax.imageio.ImageIO;
 import java.awt.*;
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.DoubleBuffer;
@@ -37,7 +40,7 @@ public class Renderer extends AbstractRenderer{
 	
 OGLBuffers buffers;
 	
-	int shaderProgram, locMat, cervenaBarva,zelenaBarva,modraBarva,otoceni,cent1,cent2,cent3;
+	int shaderProgram, locMat, cervenaBarva,zelenaBarva,modraBarva,otoceni,cent1,cent2,cent3,colorBack;
 	
 	OGLTexture2D texture, texture2;
 	float cervenaBarvaHodnota =0;
@@ -46,7 +49,7 @@ OGLBuffers buffers;
 	float otoceniHodnota=0;
 	private VideoGrabber videoGrabber;
 	private OpenCVImageFormat videoImageFormat;
-
+	ByteBuffer buffer;
 
 
 	OGLRenderTarget renderTarget;
@@ -211,10 +214,17 @@ OGLBuffers buffers;
 	@Override
 	public void init() {
 
+		Point3D point3D = new Point3D(350,0,0);
+		Point3D jjj = new Point3D(10,0,0);
+		System.out.println(jjj.getSquareOfDistance(point3D) + " ssdadadada");
 		glClearColor(0,0,0,1);
-
+		videoGrabber = new VideoGrabber("./res/textures/video2.mov");
+		System.out.println("Video FPS: " + videoGrabber.getFPS());
+		System.out.println("ss " + videoGrabber.getTotalFrameCount());
+		System.out.println(videoGrabber.grabImage());
+		videoImageFormat = new OpenCVImageFormat(3);
 		createBuffers();
-
+		buffer = videoGrabber.grabImage();
 		//nahrani shaderu
 		shaderProgram = ShaderUtils.loadProgram("/mujShader2/mujStart2");
 		
@@ -262,7 +272,7 @@ OGLBuffers buffers;
 		cent1 = glGetUniformLocation(shaderProgram, "cent1");
 		cent2 = glGetUniformLocation(shaderProgram, "cent2");
 		cent3 = glGetUniformLocation(shaderProgram, "cent3");
-
+		colorBack = glGetUniformLocation(shaderProgram, "colorBack");
 		nastaveniShaderu();
 
 		textureViewer = new OGLTexture2D.Viewer();
@@ -272,7 +282,7 @@ OGLBuffers buffers;
 		//modraBarva = glGetUniformLocation(shaderProgram, "modraBarva");
 		//otoceni = glGetUniformLocation(shaderProgram, "otoceni");
 
-
+		glUniform3fShort(colorBack,new Point3D(new Col(texture.toBufferedImage().getRGB(10,10))));
 
 }
 	
@@ -293,8 +303,22 @@ OGLBuffers buffers;
 		//glUniform1f(modraBarva, modraBarvaHodnota);
 		//glUniform1f(otoceni, otoceniHodnota);
 
+		if (buffer != null) {
+			//System.out.format("%.1f s / %.1f s", videoGrabber.getCurrentVideoTime(), videoGrabber.getTotalVideoTime());
+			//System.out.println( videoGrabber.getCurrentVideoTime()+"s / "+ videoGrabber.getTotalVideoTime()+ "s ");
+			if (texture == null) {
+				texture = new OGLTexture2D(videoGrabber.getWidth(), videoGrabber.getHeight(), videoImageFormat, buffer);
+			} else {
 
-		
+				texture.setTextureBuffer(videoImageFormat, buffer);
+			}
+			//texture.bind(shaderProgram, "texture", 0);
+		} else {
+
+			videoGrabber.rewind();
+
+		}
+
 		// set our render target (texture)
 		renderTarget.bind();
 
@@ -303,11 +327,12 @@ OGLBuffers buffers;
 		
 		texture.bind(shaderProgram, "textureID", 0);
 		texture2.bind(shaderProgram,"textureIP",1);
-		
+
+
 
 
 		// bind and draw
-		buffers.draw(GL_TRIANGLES, shaderProgram);
+		//buffers.draw(GL_TRIANGLES, shaderProgram);
 		
 		//textureColor = renderTarget.getColorTexture();
 
@@ -342,45 +367,63 @@ OGLBuffers buffers;
 
 		textRenderer.addStr2D(width-50, height-3,  "B: "+modraBarvaHodnota);
 		textRenderer.draw();
+
+		//if((int)videoGrabber.getCurrentFrameCount()==30){
+		//	try {
+		//		File output = new File("output1.png");
+		//		ImageIO.write(renderTarget.getColorTexture().toBufferedImage(),"png",output);
+		//		System.out.println("uloženo");
+		//	} catch (IOException e) {
+		//		e.printStackTrace();
+		//	}
+		//}
+		buffer = videoGrabber.grabImage();
 	}
 
 	private void nastaveniShaderu(){
 
-		videoGrabber = new VideoGrabber("./res/textures/video1.mp4");
-		System.out.println("Video FPS: " + videoGrabber.getFPS());
-		videoImageFormat = new OpenCVImageFormat(3);
 
 
-		ByteBuffer buffer = videoGrabber.grabImage();
+
+
 		if (buffer != null) {
-			System.out.format("%.1f s / %.1f s", videoGrabber.getCurrentVideoTime(), videoGrabber.getTotalVideoTime());
-			System.out.println();
+			//System.out.format("%.1f s / %.1f s", videoGrabber.getCurrentVideoTime(), videoGrabber.getTotalVideoTime());
+			//System.out.println( videoGrabber.getCurrentVideoTime()+"s / "+ videoGrabber.getTotalVideoTime()+ "s ");
 			if (texture == null) {
 				texture = new OGLTexture2D(videoGrabber.getWidth(), videoGrabber.getHeight(), videoImageFormat, buffer);
 			} else {
+
 				texture.setTextureBuffer(videoImageFormat, buffer);
 			}
 			//texture.bind(shaderProgram, "texture", 0);
 		} else {
+			//System.out.println("sdadada");
 			videoGrabber.rewind();
 		}
 
 
 		ArrayList list = new ArrayList<Point3D>();
 
+
+
+
 		//prohledani textury pro vytvoreni k-means
-		for(int i = 0; i<texture.getWidth();i=i+50){
+		for(int i = 25; i<texture.getWidth();i=i+100){
 			System.out.println(i);
-			for(int u = 0; u<texture.getHeight();u=u+50){
+			for(int u = 25; u<texture.getHeight();u=u+100){
 				list.add(new Point3D(rgbToHsb(new Col(texture.toBufferedImage().getRGB(i,u)))));
 				System.out.print(".");
 			}
 		}
 
+		//for(int i = 0; i<100;i++){
+		//	list.add(new Point3D(360,50,50));
+		//}
+
 
 		//vytvoreni k-means
 		KMeans kMeans = new KMeans(list,3);
-		ArrayList<Cluster> pointsClusters = kMeans.getPointsClusters();
+		ArrayList<Claster> pointsClusters = kMeans.getClasters();
 
 		//vypsani k-means do konzole
         for (int i = 0 ; i < kMeans.k; i++){
@@ -391,7 +434,7 @@ OGLBuffers buffers;
 
 
 		//serazeni seznamu
-		ArrayList<Point3D> listr =sort(kMeans.getPointsClusters());
+		ArrayList<Point3D> listr =sort(kMeans.getClasters());
 
 
 		//odeslani centoid do shaderu
@@ -447,7 +490,7 @@ OGLBuffers buffers;
 	}
 
 	//serazeni klastru od nejmensiho
-	private ArrayList<Point3D> sort(ArrayList<Cluster> a){
+	private ArrayList<Point3D> sort(ArrayList<Claster> a){
 		ArrayList<Point3D> pointList = new ArrayList<>();
 
 		for (int i=0;i<a.size();i++){

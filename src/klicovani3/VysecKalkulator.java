@@ -11,15 +11,15 @@ public class VysecKalkulator {
             max=a;
         }else {
             if(!(min<=a && a<=max)){
-                System.out.println(a+" aaaa "+min +" " + max);
+               // System.out.println(a+" aaaa "+min +" " + max);
                 if (min>=a){
                     min=a;
-                    System.out.println(a+" min");
+                //    System.out.println(a+" min");
                 }
 
                 if(max<=a){
                     max=a;
-                    System.out.println(a+" max");
+                //    System.out.println(a+" max");
                 }
 
             }
@@ -35,7 +35,7 @@ public class VysecKalkulator {
         if(min==0 && 0==max){
             return 0;
         }else {
-            return (float) (max-vratOtoceni()+Math.PI/100);
+            return (float) (max-vratOtoceni()+Math.PI/50);
         }
 
     }
@@ -43,7 +43,7 @@ public class VysecKalkulator {
         if(min==0 && 0==max){
             return 0;
         }else {
-            return (float) (max-vratOtoceni()+Math.PI/5);
+            return (float) (max-vratOtoceni()+Math.PI/10);
         }
 
     }

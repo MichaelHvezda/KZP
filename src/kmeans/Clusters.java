@@ -27,6 +27,7 @@ public class Clusters extends ArrayList<Cluster> {
                 itsIndex = i;
             }
         }
+
         return itsIndex;
     }
 

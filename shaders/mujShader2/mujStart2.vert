@@ -10,7 +10,7 @@ void main() {
 
 
 
-    vec4 color = texture2D(textureIP, vec2(1 - inPosition.x, inPosition.y));
+    //vec4 color = texture2D(textureIP, vec2(1 - inPosition.x, inPosition.y));
 
     ///color == >>> co dále?
 
