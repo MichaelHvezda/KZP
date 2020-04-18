@@ -334,6 +334,7 @@ public class OGLTexture2D implements OGLTexture {
 		glUniform1i(glGetUniformLocation(shaderProgram, name), slot);
 	}
 
+
 	@Override
 	public void bind(int shaderProgram, String name) {
 		bind(shaderProgram, name, 0);
