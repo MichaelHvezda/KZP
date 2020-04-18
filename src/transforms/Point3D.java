@@ -218,8 +218,8 @@ public class Point3D {
 	 * Returns the result of multiplication by the given 4x4 matrix thus
 	 * applying the transformation contained within
 	 * 
-	 * @param m
-	 *            4x4 matrix
+	 * @param
+	 *
 	 * @return new Point3D instance
 	 */
 	public Point3D mul(final Mat4 mat) {
@@ -375,7 +375,7 @@ public class Point3D {
 		return String.format(Locale.US, "(" + format + "," + format + "," + format + "," + format + ")", x, y, z, w);
 	}
 
-	public Double getSquareOfDistance(Point3D anotherPoint){
+	public Double getSquareOfDistanceUpdated(Point3D anotherPoint){
 		double pomZaporna;
 		double pomKladna = naDruhou(x,anotherPoint.x) + naDruhou(y,anotherPoint.y) + naDruhou(z,anotherPoint.z);
 		if(x<anotherPoint.x){
@@ -390,6 +390,13 @@ public class Point3D {
 			return pomZaporna;
 		}
 	}
+
+	public Double getSquareOfDistance(Point3D anotherPoint){
+
+		return naDruhou(x,anotherPoint.x) + naDruhou(y,anotherPoint.y) + naDruhou(z,anotherPoint.z);
+
+	}
+
 	public int getIndex() {
 		return index;
 	}
