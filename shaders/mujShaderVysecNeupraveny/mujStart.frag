@@ -26,12 +26,10 @@ vec3 YCrCbtoRGB(float y1,float cr1,float cb1){
 	cr = (cr + 0.5) * 255;
 	cb = (cb + 0.5) * 255;
 
-
 	//prepocitani na RGB model
 	float r = y + 1.403*(cr - 128);
 	float g = y - 0.344*(cb - 128) - 0.714*(cr - 128);
 	float b = y + 1.770*(cb - 128);
-
 
 	//overeni aby byla barva v rozsahu (moznost presazeni o tisiciny a tudiz nefunkcnost)
 	if (255 < r) {
@@ -53,8 +51,6 @@ vec3 YCrCbtoRGB(float y1,float cr1,float cb1){
 	g = g / 255;
 	b = b / 255;
 
-
-
 	//vraceni hodnot
 	return vec3(r,g,b);
 }
@@ -71,14 +67,12 @@ vec3 RgbtoYCrCb(vec3 colorp) {
 	float cr = ((128 + 0.500*r - 0.419*g - 0.081*b)); //V
 	float cb = ((128 - 0.169*r - 0.331*g + 0.500*b));  //U
 
-
 	//propocitani y do rozsahu 0 az 1
 	y = y/255;
 	//prepocitani cr do rozsahu -0.5 az 0.5
 	cr = ((cr / 255) - 0.5);
 	//prepocitani cb do rozsahu -0.5 az 0.5
 	cb = ((cb/255) - 0.5);
-
 
 	//vraceni hodnot
 	return vec3(y, cr, cb);
@@ -94,7 +88,6 @@ float VypocetZ(float cr, float cb, float otoceni) {
 	return (cb * cos(otoceni) + cr * sin(otoceni));
 }
 
-
 void main() {
 
 	outColor = texture(textureID, texCoord);
@@ -106,9 +99,6 @@ void main() {
 	float y = yuv.x;
 	float cr = yuv.y; //V
 	float cb = yuv.z; //U
-	//promena pro oteceni (moznost vytknout/vypocitat/dodat externě)
-	//float otoceni = 1.72;
-
 
 	//otoceni os a prepocitani je na X a Z
 	float x = VypocetX(cr, cb, otoceni);
@@ -139,6 +129,7 @@ void main() {
 	}else {
 		kfg1 = x - pom1;
 	}
+
 	if(kfg1==0){
 		// vykresleni nezmeneho pixelu
 		outColor= vec4(outColor);
@@ -146,40 +137,32 @@ void main() {
 
 	//urceni jestli se bude odstranovat pixel a nahrazovat pozadim nebo se bude prekreslovat
 	if(kfg==0 && kfg1 >0){
+
 		//posunuti barvy do hranicnice podle osy x
 		x = x - kfg1;
 		float newCr, newCb;
+
 		//vypocitani novych hodnot barvy
 		newCr = VypocetX(x, z, -otoceni);
 		newCb = VypocetZ(x, z, -otoceni);
 
 		//prevrzeni nove barvy do RGB
-		//vec3 col = YCrCbtoRGB(y, newCr+0.1, newCb+0.1);
-
 		vec3 col = YCrCbtoRGB(y, newCr, newCb);
 
 		//vraceni vysledne textury
 		outColor = vec4(col,1-kfg1*2.1);
 
-
 		float outA = outColor.w + outColor1.w * (1.0f - outColor.w);
 		outColor = vec4((outColor.rgb * outColor.w + outColor1.rgb * outColor1.w * (1.0f - outColor.w)) / outA, outA);;
-
-
-
 
 	}else{
 
 		//vymezeni pro nepocitani s tmavou a velmi svetlou barvou/hodnotami
 		if (0.20 < y && y < 0.85){
 			kfg = kfg;
-
 		}else {
-
 			kfg = 0;
 		}
-
-
 
 		//zjisteni jestli je barva ve vyseci nebo ne -> pokud je tak nastaveni alphy na 0.0
 		if(0.0 < kfg){

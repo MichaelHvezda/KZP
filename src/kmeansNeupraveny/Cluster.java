@@ -15,7 +15,7 @@ public class Cluster {
     public Cluster(int id) {
         this.id = id;
         this.points = new ArrayList<Point3D>();
-        this.centroid = null;
+        this.centroid = new Point3D();
     }
 
     public ArrayList<Point3D> getPoints() {
@@ -50,10 +50,6 @@ public class Cluster {
         System.out.println("[Cluster: " + id+"]");
         System.out.println("[Centroid: " + centroid + "]");
         System.out.println("[Points: " + points.size());
-        //for(Point3D p : points) {
-        //    System.out.println(p);
-        //}
-        //System.out.println("]");
     }
 
 }

@@ -384,7 +384,7 @@ public class Point3D {
 			pomZaporna = naDruhou(x-360,anotherPoint.x)	+ naDruhou(y,anotherPoint.y) + naDruhou(z,anotherPoint.z);
 		}
 
-		if(pomKladna<=pomZaporna){
+		if(pomKladna<pomZaporna){
 			return pomKladna;
 		}else {
 			return pomZaporna;

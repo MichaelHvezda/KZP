@@ -10,14 +10,13 @@ uniform sampler2D textureID;
 
 // popredi
 uniform sampler2D textureIP;
-//uniform float cervenaBarva;
-//uniform float zelenaBarva;
-//uniform float modraBarva;
 uniform float otoceni;
 uniform vec3 cent1;
 uniform vec3 cent2;
 uniform vec3 cent3;
 uniform vec3 colorBack;
+
+//prepocet barevneho modelu
 vec3 RgbToHsb(vec3 colorp){
 float r = (colorp.r);
 float g = (colorp.g);
@@ -54,7 +53,7 @@ vec3 vysledek = vec3(h, s*100.0, maxn*100.0);
 return vysledek;
 }
 
-
+//vypocet vzdalenosti dvou bodu
 float vzdalenost(vec3 col,vec3 cent){
 
 	return (((col.x - cent.x) * (col.x - cent.x))
@@ -113,39 +112,20 @@ void main() {
 		if(jednaBack==smalBack){
 			outColor = outColor1;
 		}
-			outColor;
-
-
+	outColor;
 	}
-	//druha hodnota vzdy ta, ktera se klicuje
+
 	if(dva==smal){
-
 		if(dvaBack==smalBack){
-
 			outColor = outColor1;
-
 		}
-			outColor;
-
-
-
+	outColor;
 	}
+
 	if(tri==smal){
 		if(triBack==smalBack){
-
 			outColor = outColor1;
-
-
 		}
-			outColor;
-
+	outColor;
 	}
-
-
-
-
-	//outColor=vec4(barva(jedna,dva,tri),1.0);
-
-
-
 }

@@ -11,20 +11,15 @@ public class VysecKalkulator {
             max=a;
         }else {
             if(!(min<=a && a<=max)){
-               // System.out.println(a+" aaaa "+min +" " + max);
                 if (min>=a){
                     min=a;
-                //    System.out.println(a+" min");
                 }
 
                 if(max<=a){
                     max=a;
-                //    System.out.println(a+" max");
                 }
-
             }
         }
-
     }
 
     public float vratOtoceni(){

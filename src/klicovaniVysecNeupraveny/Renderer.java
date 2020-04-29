@@ -33,15 +33,11 @@ public class Renderer extends AbstractRenderer{
 	private double ox, oy;
 	private boolean mouseButton1 = false;
 	private boolean prebarveniBool = false;
-
 	private OGLBuffers buffers;
 	private boolean pomocnaBul;
-	private int shaderProgram, locMat, cervenaBarva,zelenaBarva,modraBarva,otoceni,vysecBarva,vysecKlic;
+	private int shaderProgram,otoceni,vysecBarva,vysecKlic;
+	private OGLTexture2D texture, texture2;
 
-	private OGLTexture2D texture, texture2, textureSave;
-	private float cervenaBarvaHodnota = 0;
-	private float zelenaBarvaHodnota = 0;
-	private float modraBarvaHodnota = 0;
 	//hodnota otočení barevné palety aby se klicovana barva nachazela v bode 0
 	private float otoceniHodnota = 0;
 
@@ -53,12 +49,9 @@ public class Renderer extends AbstractRenderer{
 
 	private VysecKalkulator vysecKalkulator = new VysecKalkulator();
 	private OGLRenderTarget renderTarget;
-	private boolean draw = false;
 	private VideoGrabber videoGrabber;
 	private OpenCVImageFormat videoImageFormat;
 	private ByteBuffer buffer;
-	private OGLTexture2D.Viewer textureViewer;
-	private Stopwatch stopwatch;
 	
 	private GLFWKeyCallback   keyCallback = new GLFWKeyCallback() {
 		@Override
@@ -67,28 +60,6 @@ public class Renderer extends AbstractRenderer{
 				glfwSetWindowShouldClose(window, true); // We will detect this in the rendering loop
 			if (action == GLFW_PRESS || action == GLFW_REPEAT){
 				switch (key) {
-
-				case GLFW_KEY_N:
-					draw = false;
-					break;
-				case GLFW_KEY_Q:
-					cervenaBarvaHodnota= (255+cervenaBarvaHodnota+0.5f)%255;
-					break;
-				case GLFW_KEY_W:
-					cervenaBarvaHodnota= (255+cervenaBarvaHodnota-0.5f)%255;
-					break;
-				case GLFW_KEY_A:
-					zelenaBarvaHodnota= (255+zelenaBarvaHodnota+0.5f)%255;
-					break;
-				case GLFW_KEY_S:
-					zelenaBarvaHodnota= (255+zelenaBarvaHodnota-0.5f)%255;
-					break;
-				case GLFW_KEY_Z:
-					modraBarvaHodnota= (255+modraBarvaHodnota+0.1f)%255;
-					break;
-				case GLFW_KEY_X:
-					modraBarvaHodnota= (255+modraBarvaHodnota-0.1f)%255;
-					break;
 				case GLFW_KEY_M:
 					prebarveniBool=!(prebarveniBool);
 					break;
@@ -124,7 +95,6 @@ public class Renderer extends AbstractRenderer{
 		public void invoke(long window, int button, int action, int mods) {
 			mouseButton1 = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS;
 
-			
 			if (button==GLFW_MOUSE_BUTTON_1 && action == GLFW_PRESS){
 				mouseButton1 = true;
 				DoubleBuffer xBuffer = BufferUtils.createDoubleBuffer(1);
@@ -132,21 +102,7 @@ public class Renderer extends AbstractRenderer{
 				glfwGetCursorPos(window, xBuffer, yBuffer);
 				ox = xBuffer.get(0);
 				oy = yBuffer.get(0);
-
-				//System.out.println("mous press on " + ox + " " + oy);
 			}
-			/*
-			if (button==GLFW_MOUSE_BUTTON_1 && action == GLFW_RELEASE){
-				mouseButton1 = false;
-				DoubleBuffer xBuffer = BufferUtils.createDoubleBuffer(1);
-				DoubleBuffer yBuffer = BufferUtils.createDoubleBuffer(1);
-				glfwGetCursorPos(window, xBuffer, yBuffer);
-				double x = xBuffer.get(0);
-				double y = yBuffer.get(0);
-
-				ox = x;
-				oy = y;
-        	}*/
 		}
 	};
 	
@@ -154,7 +110,6 @@ public class Renderer extends AbstractRenderer{
     	@Override
         public void invoke(long window, double x, double y) {
 			if (mouseButton1) {
-
 				ox = x;
 				oy = y;
 			}
@@ -199,7 +154,6 @@ public class Renderer extends AbstractRenderer{
 		// triangles defined in index buffer
 				float[] cube = {
 
-
 						-1, -1,     0, 1,
 						1, -1,      1, 1,
 						1, 1,       1, 0,
@@ -208,79 +162,56 @@ public class Renderer extends AbstractRenderer{
 
 				int[] indexBufferData = {0,1,2,0,2,3};
 
-				
-				
 		OGLBuffers.Attrib[] attributes = {
 				new OGLBuffers.Attrib("inPosition", 2),
-				//new OGLBuffers.Attrib("inNormal", 3),
 				new OGLBuffers.Attrib("inTextureCoordinates", 2)
 		};
 
 		buffers = new OGLBuffers(cube, attributes, indexBufferData);
-
-		//System.out.println(buffers.toString());
 	}
 
 	@Override
 	public void init() {
-		stopwatch = new Stopwatch();
-		stopwatch.startTime();
 		glClearColor(0,0,0,1);
 
+		//prirazeni popredi
 		videoGrabber = new VideoGrabber("./res/textures/video2.mov");
-		System.out.println("Video FPS: " + videoGrabber.getFPS());
-		System.out.println("ss " + videoGrabber.getTotalFrameCount());
-		System.out.println(videoGrabber.grabImage());
+
 		videoImageFormat = new OpenCVImageFormat(3);
 		createBuffers();
 		buffer = videoGrabber.grabImage();
 
-		createBuffers();
-		
+		//nahrani shaderu
 		shaderProgram = ShaderUtils.loadProgram("/mujShaderVysecNeupraveny/mujStart");
 		
 		glUseProgram(this.shaderProgram);
-		
 
-		
-
+		//rozdeloveni videa na jednotlive snimky
 		if (buffer != null) {
-			//System.out.format("%.1f s / %.1f s", videoGrabber.getCurrentVideoTime(), videoGrabber.getTotalVideoTime());
-			//System.out.println();
-			//System.out.println( videoGrabber.getCurrentVideoTime()+"s / "+ videoGrabber.getTotalVideoTime()+ "s ");
 			if (texture == null) {
 				texture = new OGLTexture2D(videoGrabber.getWidth(), videoGrabber.getHeight(), videoImageFormat, buffer);
 			} else {
-
 				texture.setTextureBuffer(videoImageFormat, buffer);
 			}
-			//texture.bind(shaderProgram, "texture", 0);
 		} else {
-			//System.out.println("sdadada");
 			videoGrabber.rewind();
 		}
 
 		renderTarget = new OGLRenderTarget(texture.getWidth(), texture.getHeight());
 		try {
-			//texture = new OGLTexture2D("textures/foto.jpg");
+			//prirazeni pozadi
 			texture2= new OGLTexture2D("textures/back1.jpg");
 		} catch (IOException e) {
 			//  Auto-generated catch block
 			e.printStackTrace();
 		}
 
-
-		//nastaveniShaderu();
-		textureViewer = new OGLTexture2D.Viewer();
 		textRenderer = new OGLTextRenderer(width, height);
-		//cervenaBarva = glGetUniformLocation(shaderProgram, "cervenaBarva");
-		//zelenaBarva = glGetUniformLocation(shaderProgram, "zelenaBarva");
-		//modraBarva = glGetUniformLocation(shaderProgram, "modraBarva");
+
+		//umisteni promenych
 		otoceni = glGetUniformLocation(shaderProgram, "otoceni");
 		vysecKlic = glGetUniformLocation(shaderProgram, "vysecKlic");
 		vysecBarva = glGetUniformLocation(shaderProgram, "vysecBarva");
-
-		stopwatch.resetTime();
 }
 	
 	@Override
@@ -290,28 +221,22 @@ public class Renderer extends AbstractRenderer{
 
 		glViewport(0, 0, width, height);
 
+		//rozhodovani jestli se algoritmus nachazi v rezimu nastavovani nebo klicovani
 		if(!pomocnaBul){
-			stopwatch.resetTime();
 			nastaveniShaderu();
 		}
 
-
+		//rozhodovani jestli se algoritmus nachazi v rezimu nastavovani nebo klicovani
 		if(pomocnaBul){
-			// bind and draw
-			//buffers.draw(GL_TRIANGLES, shaderProgram);
+
+			//rozdeloveni videa na jednotlive snimky
 			if (buffer != null) {
-				//System.out.format("%.1f s / %.1f s", videoGrabber.getCurrentVideoTime(), videoGrabber.getTotalVideoTime());
-				//System.out.println();
-				//System.out.println( videoGrabber.getCurrentVideoTime()+"s / "+ videoGrabber.getTotalVideoTime()+ "s ");
 				if (texture == null) {
 					texture = new OGLTexture2D(videoGrabber.getWidth(), videoGrabber.getHeight(), videoImageFormat, buffer);
 				} else {
-
 					texture.setTextureBuffer(videoImageFormat, buffer);
 				}
-				//texture.bind(shaderProgram, "texture", 0);
 			} else {
-				//System.out.println("sdadada");
 				videoGrabber.rewind();
 			}
 		}
@@ -319,17 +244,10 @@ public class Renderer extends AbstractRenderer{
 		// set the current shader to be used
 		glUseProgram(shaderProgram);
 
-
-		//glUniform1f(cervenaBarva, cervenaBarvaHodnota);
-		//glUniform1f(zelenaBarva, zelenaBarvaHodnota);
-		//glUniform1f(modraBarva, modraBarvaHodnota);
 		glUniform1f(otoceni, otoceniHodnota);
 		glUniform1f(vysecKlic, vysecKlicovani);
 		glUniform1f(vysecBarva, vysecPrebarveni);
 
-		if(videoGrabber.getCurrentFrameCount()==0){
-			stopwatch.resetTimeAvr();
-		}
 		// set our render target (texture)
 		renderTarget.bind();
 
@@ -339,23 +257,6 @@ public class Renderer extends AbstractRenderer{
 		texture.bind(shaderProgram, "textureID", 0);
 		texture2.bind(shaderProgram,"textureIP",1);
 
-
-		//if((int)videoGrabber.getCurrentFrameCount()==30){
-		//	buffers.draw(GL_TRIANGLES, shaderProgram);
-		//	textureSave = renderTarget.getColorTexture();
-		//	BufferedImage sssdad = textureSave.toBufferedImage();
-		//	//System.out.println(new Col(renderTarget.getColorTexture().toBufferedImage().getRGB(10,10)));
-		//	//System.out.println(renderTarget.getColorTexture());
-		//	File output = new File("output1.png");
-		//	try {
-		//		ImageIO.write(sssdad,"PNG",output);
-		//		System.out.println("uloženo");
-		//	} catch (IOException e) {
-		//		e.printStackTrace();
-		//	}
-		//}
-
-
 		// set the default render target (screen)
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glViewport(0, 0, width, height);
@@ -363,36 +264,15 @@ public class Renderer extends AbstractRenderer{
 
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the framebuffer
-		
-		// use the result of the previous draw as a texture for the next
-		//renderTarget.bindColorTexture(shaderProgram, "textureID", 0);
-		//renderTarget.getColorTexture().bind(shaderProgram, "textureID", 0);
-		// use the depth buffer from the previous draw as a texture for the next
-		//renderTarget.bindDepthTexture(shaderProgram, "textureID", 0);
-
-		//texRGB.bind(shaderProgram, "textureID", 0);
 
 		buffers.draw(GL_TRIANGLES, shaderProgram);
 
-
-		String text = new String(" [LMB] camera, WSAD, N - draw to texture");
-		
-		//textureViewer.view(textureColor, -1, -1, 1, height / (double) width);
-		//textureViewer.view(texRGB, -1, 0, 1, height / (double) width);
+		String text = new String(" [LMB] vyber oblasti pro klicovani, N - ukonceni nastavovani a zahajeni klicovani");
 
 		textRenderer.clear();
 		textRenderer.setColor(Color.BLUE);
 		textRenderer.addStr2D(2, 15, text);
-		textRenderer.setColor(Color.BLUE);
-		textRenderer.addStr2D(width-150, height-3,  "R: "+cervenaBarvaHodnota);
-
-		textRenderer.addStr2D(width-100, height-3,  "G: "+zelenaBarvaHodnota);
-
-		textRenderer.addStr2D(width-50, height-3,  "B: "+modraBarvaHodnota);
 		textRenderer.draw();
-
-
-
 
 		if(pomocnaBul){
 			buffer = videoGrabber.grabImage();
@@ -402,26 +282,21 @@ public class Renderer extends AbstractRenderer{
 
 	private void nastaveniShaderu(){
 
-
-		//System.out.println(ox + " sss");
+		//zjistovani barvy mista interakce uzivatele
 		double pomerVysky = ox / width;
 		double pomerSirky = oy / height;
 		int vyska = (int)(texture.getWidth() * pomerVysky);
 		int sirka = (int)(texture.getHeight() * pomerSirky);
 		if (!(ox==0 && oy==0)){
 
-			//Point3D ssss = rgbtoYCrCb(getColor(texture,vyska,sirka));
-			//float ddd = vypocetOtoceni(ssss);
-			//System.out.println("yrb" + ssss.mul(100) + " otoceni " + ddd + " x: " + vypocetX(ssss.getY(),ssss.getZ(),ddd) + " z: " + vypocetZ(ssss.getY(),ssss.getZ(),ddd) + " xu: " + vypocetX(ssss.getY()-0.1,ssss.getZ()-0.1,ddd) + " zu: " + vypocetZ(ssss.getY()-0.1,ssss.getZ()-0.1,ddd));
-
 			vysecKalkulator.vlozHodnotu(vypocetOtoceni(rgbtoYCrCb(getColor(texture,vyska,sirka))));
-
-
 
 		}
 
+		//vypocet otoceni
 		otoceniHodnota = vysecKalkulator.vratOtoceni();
 
+		//vypocet vysece
 		vysecKlicovani = vysecKalkulator.vratVysec();
 
 		if(prebarveniBool){
@@ -429,44 +304,21 @@ public class Renderer extends AbstractRenderer{
 		}else {
 			vysecPrebarveni=0;
 		}
-
-		//System.out.println(otoceniHodnota);
-
 	}
-
-	//rgb: (116.0,197.0, 4.0,255.0)
-	//yuv: ( 0.6,-0.1,-0.3, 1.0)
-	//otoceni: -10.433102
 
 	//vypocet otoceni
 	private float vypocetOtoceni(Point3D a){
 		//vypocet otoceni tak aby zadana hodnota po otoceni lezela na ose Z
 		return (float) ((Math.PI)+(Math.atan(-a.getZ()/a.getY())));
-
-		//pro osu X
-		//return (float) (((Math.PI*2)+(Math.atan((a.getY())/a.getZ()))));
-	}
-	private double vypocetX(double cr, double cb, double otoceni) {
-		return (cr * Math.cos(otoceni) - cb * Math.sin(otoceni));
 	}
 
-	private double vypocetZ(double cr, double cb, double otoceni) {
-		return (cb *  Math.cos(otoceni) + cr *  Math.sin(otoceni));
-	}
-
-	private Col getColor(OGLTexture2D text){
-		return getColor(text,200,200);
-	}
-
+	//vraceni barvy urciteho bodu textury
 	private Col getColor(OGLTexture2D text, int x,int y){
-		//System.out.println("x " + x + " y " + y + " col " + new Col(text.toBufferedImage().getRGB(x,y)).getR()*255 +" "+ new Col(text.toBufferedImage().getRGB(x,y)).getG()*255 +" "+ new Col(text.toBufferedImage().getRGB(x,y)).getB()*255);
-
 		return new Col(text.toBufferedImage().getRGB(x,y));
 	}
 
 	private Point3D rgbtoYCrCb(Col colorp) {
 		//rozdeleni podle barev + prepocitani do rozsahu 0 az 255
-		//nenasel jsem jiny vzorec -> moznost nahrazeni lepsim a dokonalejsim
 		double r = (colorp.getR() * 255);
 		double g = ( colorp.getG() * 255);
 		double b = ( colorp.getB() * 255);
@@ -484,7 +336,6 @@ public class Renderer extends AbstractRenderer{
 		cb = ((cb/255) - 0.5);
 
 		//vraceni hodnot
-		//System.out.println(y + " " + cr + " " + cb);
 		return new Point3D(y, cr, cb);
 	}
 }

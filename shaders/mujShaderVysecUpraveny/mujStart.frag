@@ -104,14 +104,8 @@ void main() {
 
 	//rozdeleni yuv do promenych
 	float y = yuv.x;
-	//float cr = yuv.y; //V
-	//float cb = yuv.z; //U
-
 	float cr = yuv.y - 0.1; //V
 	float cb = yuv.z - 0.1; //U
-
-	//promena pro oteceni (moznost vytknout/vypocitat/dodat externě)
-	//float otoceni = 1.72;
 
 
 	//otoceni os a prepocitani je na X a Z
@@ -150,40 +144,32 @@ void main() {
 
 	//urceni jestli se bude odstranovat pixel a nahrazovat pozadim nebo se bude prekreslovat
 	if(kfg==0 && kfg1 >0){
+
 		//posunuti barvy do hranicnice podle osy x
 		x = x - kfg1;
 		float newCr, newCb;
+
 		//vypocitani novych hodnot barvy
 		newCr = VypocetX(x, z, -otoceni);
 		newCb = VypocetZ(x, z, -otoceni);
 
 		//prevrzeni nove barvy do RGB
-		//vec3 col = YCrCbtoRGB(y, newCr+0.1, newCb+0.1);
-
 		vec3 col = YCrCbtoRGB(y, newCr, newCb);
 
 		//vraceni vysledne textury
 		outColor = vec4(col,1-kfg1*2.1);
 
-
 		float outA = outColor.w + outColor1.w * (1.0f - outColor.w);
 		outColor = vec4((outColor.rgb * outColor.w + outColor1.rgb * outColor1.w * (1.0f - outColor.w)) / outA, outA);;
-
-
-
 
 	}else{
 
 		//vymezeni pro nepocitani s tmavou a velmi svetlou barvou/hodnotami
 		if (0.20 < y && y < 0.85){
 			kfg = kfg;
-
 		}else {
-
 			kfg = 0;
 		}
-
-
 
 		//zjisteni jestli je barva ve vyseci nebo ne -> pokud je tak nastaveni alphy na 0.0
 		if(0.0 < kfg){
@@ -193,11 +179,4 @@ void main() {
 		}
 
 	}
-
-
-
-
-
-
-
 }

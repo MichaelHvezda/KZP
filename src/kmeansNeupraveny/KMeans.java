@@ -4,18 +4,9 @@ import transforms.Point3D;
 
 import java.util.ArrayList;
 
-
-
+// prevzato a upraveno z https://www.dataonfocus.com/k-means-clustering-java-code/
 
 public class KMeans {
-
-    //Number of Clusters. This metric should be related to the number of points
-   //private int NUM_CLUSTERS = 3;
-   ////Number of Points
-   //private int NUM_POINTS = 15;
-   ////Min and Max X and Y
-   //private static final int MIN_COORDINATE = 0;
-   //private static final int MAX_COORDINATE = 10;
 
     private ArrayList<Point3D> points;
     private ArrayList<Cluster> clusters;
@@ -31,30 +22,16 @@ public class KMeans {
         calculate();
     }
 
-  // public static void main(String[] args) {
-
-  //     KMeans kmeans = new KMeans();
-  //     kmeans.init();
-  //     kmeans.calculate();
-  // }
-
     //Initializes the process
     public void init() {
-        //Create Points
 
-
-        //Create Clusters
         //Set Centroids with
         for (int i = 0; i < clustersCount; i++) {
             Cluster cluster = new Cluster(i);
             Point3D centroid = points.get(i);
-            //System.out.println("sjadodhaifj " + centroid);
             cluster.setCentroid(centroid);
             clusters.add(cluster);
         }
-
-        //Print Initial state
-        //plotClusters();
     }
 
     private void plotClusters() {
@@ -66,37 +43,17 @@ public class KMeans {
 
     //The process to calculate the K Means, with iterating method.
     public void calculate() {
-        //boolean finish = false;
-        //int iteration = 0;
 
         // Add in new data, one at a time, recalculating centroids with each new one.
         while(change) {
             //Clear cluster state
-           // change =false;
             clearClusters();
-
-            //ArrayList<Point3D> lastCentroids = getCentroids();
 
             //Assign points to the closer cluster
             assignCluster();
 
             //Calculate new centroids.
             calculateCentroids();
-
-           // iteration++;
-
-            //ArrayList<Point3D> currentCentroids = getCentroids();
-
-            //Calculates total distance between new and old Centroids
-            //double distance = 0;
-            //for(int i = 0; i < lastCentroids.size(); i++) {
-            //    distance += Point3D.distance(lastCentroids.get(i),currentCentroids.get(i));
-            //}
-            //System.out.println("#################");
-            //System.out.println("Iteration: " + iteration);
-            //System.out.println("Centroid distances: " + distance);
-            //plotClusters();
-
         }
     }
 
@@ -106,16 +63,7 @@ public class KMeans {
         }
     }
 
-    private ArrayList<Point3D> getCentroids() {
-        ArrayList<Point3D> centroids = new ArrayList<Point3D>(clustersCount);
-        for(Cluster cluster : clusters) {
-            Point3D aux = cluster.getCentroid();
-            Point3D point = new Point3D(aux.getX(),aux.getY(),aux.getZ());
-            centroids.add(point);
-        }
-        return centroids;
-    }
-
+    //prirazeni bodu do skupin
     private void assignCluster() {
         change=false;
 
@@ -139,13 +87,13 @@ public class KMeans {
         }
     }
 
+    //vypocitani nove centroidy
     private void calculateCentroids() {
         for(Cluster cluster : clusters) {
             double sumX = 0;
             double sumY = 0;
             double sumZ = 0;
             ArrayList<Point3D> list = cluster.getPoints();
-            System.out.println("id " + cluster.getId() + " size " + list.size());
             int n_points = list.size();
 
             for(Point3D point : list) {
@@ -153,8 +101,6 @@ public class KMeans {
                 sumY += point.getY();
                 sumZ += point.getZ();
             }
-
-            //Point3D centroid = cluster.getCentroid();
 
             double newX = sumX / n_points;
             double newY = sumY / n_points;
