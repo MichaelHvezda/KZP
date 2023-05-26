@@ -20,7 +20,7 @@ public class VideoGrabber extends Grabber {
             VM options:
             -Djava.library.path=D:\\Java\\lib\\opencv-411\\build\\java\\x64\\
              */
-            System.load("D:\\JavaProgramko\\KZPJ-muj\\opencv\\build\\bin\\opencv_videoio_ffmpeg412_64.dll");
+            System.load("D:\\opencv\\opencv\\build\\java\\x64\\opencv_java460.dll");
         } catch (UnsatisfiedLinkError e) {
             System.err.println("Native code library failed to load.\n" + e);
             System.exit(1);

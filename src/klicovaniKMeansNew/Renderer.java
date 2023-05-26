@@ -1,4 +1,4 @@
-package klicovaniKMeansUpraveny;
+package klicovaniKMeansNew;
 
 
 import helpers.OpenCVImageFormat;
@@ -11,19 +11,17 @@ import org.lwjgl.glfw.*;
 import pom.AbstractRenderer;
 import transforms.Col;
 import transforms.Point3D;
+import transforms.Vec3D;
 
-import java.awt.*;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.DoubleBuffer;
 import java.util.ArrayList;
 
-
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.opengl.GL30.GL_FRAMEBUFFER;
-import static org.lwjgl.opengl.GL30.glBindFramebuffer;
+import static org.lwjgl.opengl.GL30.*;
 
 /**
 * 
@@ -36,15 +34,17 @@ public class Renderer extends AbstractRenderer{
 	private double ox, oy;
 	private boolean mouseButton1 = false;
     private OGLBuffers buffers;
-	private int shaderProgram, cent1,cent2,cent3,colorBack;
+	private int shaderProgramStart,shaderProgramKonec, cent1,cent2,cent3,colorBack;
 	private OGLTexture2D texture, texture2;
 	private VideoGrabber videoGrabber;
 	private OpenCVImageFormat videoImageFormat;
 	private ByteBuffer buffer;
 	private OGLRenderTarget renderTarget;
 
+	public Point3D[] kmeans = new Point3D[3];
+
 	
-	private GLFWKeyCallback   keyCallback = new GLFWKeyCallback() {
+	private final GLFWKeyCallback   keyCallback = new GLFWKeyCallback() {
 		@Override
 		public void invoke(long window, int key, int scancode, int action, int mods) {
 			if ( key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE )
@@ -57,7 +57,7 @@ public class Renderer extends AbstractRenderer{
 		}
 	};
     
-    private GLFWWindowSizeCallback wsCallback = new GLFWWindowSizeCallback() {
+    private final GLFWWindowSizeCallback wsCallback = new GLFWWindowSizeCallback() {
     	@Override
     	public void invoke(long window, int w, int h) {
             if (w > 0 && h > 0 && 
@@ -71,7 +71,7 @@ public class Renderer extends AbstractRenderer{
         }
     };
     
-    private GLFWMouseButtonCallback mbCallback = new GLFWMouseButtonCallback () {
+    private final GLFWMouseButtonCallback mbCallback = new GLFWMouseButtonCallback () {
     	@Override
 		public void invoke(long window, int button, int action, int mods) {
 			mouseButton1 = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_1) == GLFW_PRESS;
@@ -99,7 +99,7 @@ public class Renderer extends AbstractRenderer{
 		}
 	};
 	
-    private GLFWCursorPosCallback cpCallbacknew = new GLFWCursorPosCallback() {
+    private final GLFWCursorPosCallback cpCallbacknew = new GLFWCursorPosCallback() {
     	@Override
         public void invoke(long window, double x, double y) {
 			if (mouseButton1) {
@@ -111,7 +111,7 @@ public class Renderer extends AbstractRenderer{
 
 
     
-    private GLFWScrollCallback scrollCallback = new GLFWScrollCallback() {
+    private final GLFWScrollCallback scrollCallback = new GLFWScrollCallback() {
         @Override public void invoke (long window, double dx, double dy) {
         }
     };
@@ -169,7 +169,6 @@ public class Renderer extends AbstractRenderer{
 		buffers = new OGLBuffers(cube, attributes, indexBufferData);
 		System.out.println(buffers.toString());
 	}
-
 	@Override
 	public void init() {
 		glClearColor(0,0,0,1);
@@ -180,16 +179,17 @@ public class Renderer extends AbstractRenderer{
 		videoImageFormat = new OpenCVImageFormat(3);
 
 		createBuffers();
-
+		createKmeans();
 		buffer = videoGrabber.grabImage();
 
 		//nahrani shaderu
-		shaderProgram = ShaderUtils.loadProgram("/mujShaderKMeansUpraveny/mujStart");
-		
-		glUseProgram(this.shaderProgram);
+		shaderProgramStart = ShaderUtils.loadProgram("/newShaderKMeans/mujStart");
+		shaderProgramKonec = ShaderUtils.loadProgram("/newShaderKMeans/mujKonec");
+
+		glUseProgram(this.shaderProgramStart);
 		width = 600;
 		height = 800;
-		renderTarget = new OGLRenderTarget(width, height);
+		renderTarget = new OGLRenderTarget(width, height,3);
 
 		try {
             //prirazeni pozadi
@@ -200,16 +200,14 @@ public class Renderer extends AbstractRenderer{
 		}
 
 		//umisteni promenych
-		cent1 = glGetUniformLocation(shaderProgram, "cent1");
-		cent2 = glGetUniformLocation(shaderProgram, "cent2");
-		cent3 = glGetUniformLocation(shaderProgram, "cent3");
-		colorBack = glGetUniformLocation(shaderProgram, "colorBack");
+		cent1 = glGetUniformLocation(shaderProgramStart, "cent1");
+		cent2 = glGetUniformLocation(shaderProgramStart, "cent2");
+		cent3 = glGetUniformLocation(shaderProgramStart, "cent3");
 
-		nastaveniShaderu();
+		//nastaveniShaderuStart();
 
 		textRenderer = new OGLTextRenderer(width, height);
 
-		glUniform3fShort(colorBack,new Point3D(new Col(texture.toBufferedImage().getRGB(10,10))));
 }
 	
 	@Override
@@ -219,9 +217,16 @@ public class Renderer extends AbstractRenderer{
 		
 		glViewport(0, 0, width, height);
 
-		// set the current shader to be used
-		glUseProgram(shaderProgram);
+		nastaveniShaderuStart();
+		nastaveniShaderuEnd();
 
+		//nahrani dalsiho snimku
+		buffer = videoGrabber.grabImage();
+	}
+
+	private void nastaveniShaderuStart(){
+		// set the current shader to be used
+		glUseProgram(shaderProgramStart);
         //rozdeloveni videa na jednotlive snimky
 		if (buffer != null) {
 			if (texture == null) {
@@ -236,12 +241,55 @@ public class Renderer extends AbstractRenderer{
 		// set our render target (texture)
 		renderTarget.bind();
 
+		glUniform3fShort(cent1,kmeans[0]);
+		glUniform3fShort(cent2,kmeans[1]);
+		glUniform3fShort(cent3,kmeans[2]);
+		texture.bind(shaderProgramKonec, "uTexture0", 0);
+
+		glViewport(0, 0, width, height);
+
+		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the framebuffer
+
+		buffers.draw(GL_TRIANGLES, shaderProgramStart);
+
+		calculateKmeans();
+	}
+	public void calculateKmeans()
+	{
+		for (int i = 0; i < 3; i++)
+		{
+			renderTarget.getColorTexture(i).bind();
+			glGenerateMipmap(GL_TEXTURE22);
+			var width = renderTarget.getColorTexture(i).getWidth();
+			var height = renderTarget.getColorTexture(i).getHeight();
+			var totalMipmapLevels = (int)(1 + Math.floor(log2(Math.max(width, height))));
+			var pixel = new float[4];
+			glGetTexImage(GL_TEXTURE22,totalMipmapLevels,GL_RGBA,GL_FLOAT,pixel);
+
+			var large = width * height;
+			var pointX = pixel[0] * (int)large;
+			var pointY = pixel[1] * (int)large;
+			var pointZ = pixel[2] * (int)large;
+			var pointW = pixel[3] * (int)large;
+			//gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)GLEnum.Nearest);
+			//gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)GLEnum.Nearest);
+
+
+			kmeans[i]= new Point3D(pointX / pointW,pointY / pointW,pointZ / pointW,1);
+		}
+	}
+
+
+	private void nastaveniShaderuEnd(){
+
+
 		glClearColor(255, 255, 255, 1);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the framebuffer
-		
-		texture.bind(shaderProgram, "textureID", 0);
-		texture2.bind(shaderProgram,"textureIP",1);
 
+		texture.bind(shaderProgramKonec, "uTexture0", 0);
+		texture2.bind(shaderProgramKonec,"uTexture1",1);
+		renderTarget.getColorTexture(0).bind(shaderProgramKonec,"uTexture2",2);
 		// set the default render target (screen)
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glViewport(0, 0, width, height);
@@ -249,55 +297,11 @@ public class Renderer extends AbstractRenderer{
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the framebuffer
 
-		buffers.draw(GL_TRIANGLES, shaderProgram);
+		buffers.draw(GL_TRIANGLES, shaderProgramKonec);
 
-        //nahrani dalsiho snimku
+		//nahrani dalsiho snimku
 		buffer = videoGrabber.grabImage();
 	}
-
-	private void nastaveniShaderu(){
-
-        //rozdeloveni videa na jednotlive snimky
-		if (buffer != null) {
-			if (texture == null) {
-				texture = new OGLTexture2D(videoGrabber.getWidth(), videoGrabber.getHeight(), videoImageFormat, buffer);
-			} else {
-				texture.setTextureBuffer(videoImageFormat, buffer);
-			}
-		} else {
-			videoGrabber.rewind();
-		}
-
-		//vytvoreni seznamu pro hodnoty vzorku
-		ArrayList list = new ArrayList<Point3D>();
-
-		//prohledani textury pro vytvoreni k-means
-		for(int i = 0; i<texture.getWidth();i=i+100){
-			System.out.println(i);
-			for(int u = 0; u<texture.getHeight();u=u+100){
-				list.add(new Point3D(rgbToHsb(new Col(texture.toBufferedImage().getRGB(i,u)))));
-				System.out.print(".");
-			}
-			System.out.println(i);
-		}
-
-		//vytvoreni k-means
-		KMeans kMeans = new KMeans(list,3);
-		ArrayList<Cluster> pointsClusters = kMeans.getClusters();
-
-		//vypsani k-means do konzole
-        for (int i = 0 ; i < kMeans.getClustersCount(); i++){
-			System.out.println("Cluster " + i + ": " + pointsClusters.get(i).getCentroid());
-		}
-
-		//odeslani centoid do shaderu
-		glUniform3fShort(cent1,pointsClusters.get(0).getCentroid());
-		glUniform3fShort(cent2,pointsClusters.get(1).getCentroid());
-		glUniform3fShort(cent3,pointsClusters.get(2).getCentroid());
-	}
-
-
-
 
 
 
@@ -345,5 +349,20 @@ public class Renderer extends AbstractRenderer{
 				(float) b.getX(),
 				(float) b.getY(),
 				(float) b.getZ());
+	}
+
+	public static int log2(int N)
+	{
+
+		// calculate log2 N indirectly
+		// using log() method
+		int result = (int)(Math.log(N) / Math.log(2));
+
+		return result;
+	}
+	void createKmeans(){
+		kmeans[0] = new Point3D(0.7f, 0.2f, 0.5f);
+		kmeans[1] = new Point3D(1f, 0.5f, 0.7f);
+		kmeans[2] = new Point3D(0.5f, 0.7f, 0.2f);
 	}
 }
