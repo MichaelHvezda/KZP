@@ -1,5 +1,5 @@
 #version 460 core
-in vec2 TexCoord;
+in vec2 texCoord;
 
 //A uniform of the type sampler2D will have the storage value of our texture.
 uniform sampler2D uTexture0;
@@ -44,8 +44,7 @@ float MaxnIsZero(float maxn, float minn){
 	return (1.0f - (minn / maxn));
 }
 
-vec3 RgbToHsb(vec3 a)
-{
+vec3 RgbToHsb(vec3 a){
 	float r = (a.r);
 	float g = (a.g);
 	float b = (a.b);
@@ -80,16 +79,14 @@ vec3 RgbToHsb(vec3 a)
 	return vec3(h, s, maxn);
 }
 
-vec3 ToShaderRange(vec3 a)
-{
+vec3 ToShaderRange(vec3 a){
 	//h - 0/360
 	//s - 0/1
 	//maxn - 0/1
 	return vec3( mod(a.x + 1.0f, 1.0f ) * 360.0f, a.y, a.z);
 }
 
-vec4 ToTextureRange(vec3 a,float b)
-{
+vec4 ToTextureRange(vec3 a,float b){
 	//h - -1/1
 	//s - 0/1
 	//maxn - 0/1
@@ -98,8 +95,7 @@ vec4 ToTextureRange(vec3 a,float b)
 
 void main()
 {
-
-	vec4 a = texture(uTexture0, TexCoord);
+	vec4 a = texture(uTexture0, texCoord);
 	vec3 hsb = RgbToHsb(a.xyz);
 
 	vec3 cent1hsb = ToShaderRange(cent1);
@@ -111,7 +107,10 @@ void main()
 	vec2 tri = Vzdalenost(hsb, cent3hsb);
 
 	float smal = min(min(jedna.x, dva.x), tri.x);
-
+	//color0 = vec4(255, 125, 255, 255);
+	//color1 = vec4(255, 125, 255, 255);
+	//color2 = vec4(255, 125, 255, 255);
+	//return;
 	if (jedna.x == smal) {
 		color0 = ToTextureRange(hsb,jedna.y);
 		color1 = vec4(0, 0, 0, 0);

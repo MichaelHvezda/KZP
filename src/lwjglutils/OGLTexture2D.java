@@ -22,6 +22,7 @@ import org.lwjgl.BufferUtils;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.GL20.*;
+import static org.lwjgl.opengl.GL30.glGenerateMipmap;
 import static org.lwjgl.stb.STBImage.*;
 
 public class OGLTexture2D implements OGLTexture {
@@ -200,6 +201,10 @@ public class OGLTexture2D implements OGLTexture {
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_BASE_LEVEL,0);
+		glTexParameteri(GL_TEXTURE_2D,GL_TEXTURE_MAX_LEVEL,16);
+		glGenerateMipmap(GL_TEXTURE_2D);
 	}
 	
 	public <OGLTexImageType extends OGLTexImage<OGLTexImageType>> 
@@ -343,6 +348,39 @@ public class OGLTexture2D implements OGLTexture {
 	@Override
 	public int getTextureId(){
 		return textureID; 
+	}
+
+	public float[] getAvrColor(){
+		bind();
+		glGenerateMipmap(GL_TEXTURE_2D);
+
+		var width = getWidth();
+		var height = getHeight();
+		var totalMipmapLevels = (int)(1 + Math.floor(log2(Math.max(width, height))));
+		var pixel = new float[4];
+		var maxMipMap = totalMipmapLevels-1;
+		glGetTexImage(GL_TEXTURE_2D, maxMipMap,GL_RGBA,GL_FLOAT,pixel);
+
+
+		var large = width * height;
+		var xVal = pixel[0];
+		var yVal = pixel[1];
+		var zVal = pixel[2];
+		var wVal = pixel[3];
+		pixel[0] = (xVal * (int)large)/((float)wVal* (int)large);
+		pixel[1] = (yVal * (int)large)/((float)wVal* (int)large);
+		pixel[2] = (zVal * (int)large)/((float)wVal* (int)large);
+		pixel[3] = ((float)wVal * (int)large)/((float)wVal * (int)large);
+		return pixel;
+	}
+	public static int log2(int N)
+	{
+
+		// calculate log2 N indirectly
+		// using log() method
+		int result = (int)(Math.log(N) / Math.log(2));
+
+		return result;
 	}
 
 	public int getWidth() {

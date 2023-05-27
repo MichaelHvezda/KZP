@@ -14,6 +14,7 @@ import transforms.Point3D;
 import transforms.Vec3D;
 
 import java.io.IOException;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.DoubleBuffer;
 import java.util.ArrayList;
@@ -189,7 +190,8 @@ public class Renderer extends AbstractRenderer{
 		glUseProgram(this.shaderProgramStart);
 		width = 600;
 		height = 800;
-		renderTarget = new OGLRenderTarget(width, height,3);
+
+		renderTarget = new OGLRenderTarget(width, height, 3);
 
 		try {
             //prirazeni pozadi
@@ -212,10 +214,22 @@ public class Renderer extends AbstractRenderer{
 	
 	@Override
 	public void display() {
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glDisable(GL_CULL_FACE);
 		glEnable(GL_DEPTH_TEST);
 		
 		glViewport(0, 0, width, height);
+
+		//rozdeloveni videa na jednotlive snimky
+		if (buffer != null) {
+			if (texture == null) {
+				texture = new OGLTexture2D(videoGrabber.getWidth(), videoGrabber.getHeight(), videoImageFormat, buffer);
+			} else {
+				texture.setTextureBuffer(videoImageFormat, buffer);
+			}
+		} else {
+			videoGrabber.rewind();
+		}
 
 		nastaveniShaderuStart();
 		nastaveniShaderuEnd();
@@ -227,120 +241,73 @@ public class Renderer extends AbstractRenderer{
 	private void nastaveniShaderuStart(){
 		// set the current shader to be used
 		glUseProgram(shaderProgramStart);
-        //rozdeloveni videa na jednotlive snimky
-		if (buffer != null) {
-			if (texture == null) {
-				texture = new OGLTexture2D(videoGrabber.getWidth(), videoGrabber.getHeight(), videoImageFormat, buffer);
-			} else {
-				texture.setTextureBuffer(videoImageFormat, buffer);
-			}
-		} else {
-			videoGrabber.rewind();
-		}
+
 
 		// set our render target (texture)
 		renderTarget.bind();
 
-		glUniform3fShort(cent1,kmeans[0]);
-		glUniform3fShort(cent2,kmeans[1]);
-		glUniform3fShort(cent3,kmeans[2]);
-		texture.bind(shaderProgramKonec, "uTexture0", 0);
-
-		glViewport(0, 0, width, height);
-
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the framebuffer
 
+		glUniform3fShort(cent1,kmeans[0]);
+		glUniform3fShort(cent2,kmeans[1]);
+		glUniform3fShort(cent3,kmeans[2]);
+		texture.bind(shaderProgramStart, "uTexture0", 0);
+
+		glViewport(0, 0, width, height);
+
+
 		buffers.draw(GL_TRIANGLES, shaderProgramStart);
 
+		//var colooo = new Col( renderTarget.getColorTexture(0).toBufferedImage().getRGB(10,10));
+		//System.out.println(colooo);
 		calculateKmeans();
 	}
-	public void calculateKmeans()
-	{
+	public void calculateKmeans(){
 		for (int i = 0; i < 3; i++)
 		{
-			renderTarget.getColorTexture(i).bind();
-			glGenerateMipmap(GL_TEXTURE22);
-			var width = renderTarget.getColorTexture(i).getWidth();
-			var height = renderTarget.getColorTexture(i).getHeight();
-			var totalMipmapLevels = (int)(1 + Math.floor(log2(Math.max(width, height))));
-			var pixel = new float[4];
-			glGetTexImage(GL_TEXTURE22,totalMipmapLevels,GL_RGBA,GL_FLOAT,pixel);
-
-			var large = width * height;
-			var pointX = pixel[0] * (int)large;
-			var pointY = pixel[1] * (int)large;
-			var pointZ = pixel[2] * (int)large;
-			var pointW = pixel[3] * (int)large;
+			var avrColor = renderTarget.getColorTexture(i).getAvrColor();
+			//glGenerateMipmap(GL_TEXTURE_2D);
+			//var width = renderTarget.getColorTexture(i).getWidth();
+			//var height = renderTarget.getColorTexture(i).getHeight();
+			//var totalMipmapLevels = (int)(1 + Math.floor(log2(Math.max(width, height))));
+			//var pixel = new float[4];
+			//glGetTexImage(GL_TEXTURE_2D,1-totalMipmapLevels,GL_RGBA,GL_UNSIGNED_BYTE,pixel);
+//
+			//var large = width * height;
+			//var pointX = pixel[0] * (int)large;
+			//var pointY = pixel[1] * (int)large;
+			//var pointZ = pixel[2] * (int)large;
+			//var pointW = pixel[3] * (int)large;
 			//gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)GLEnum.Nearest);
 			//gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)GLEnum.Nearest);
 
 
-			kmeans[i]= new Point3D(pointX / pointW,pointY / pointW,pointZ / pointW,1);
+			kmeans[i]= new Point3D(avrColor[0],avrColor[1],avrColor[2],1);
+			System.out.println(i + " " + kmeans[i].toString());
 		}
 	}
 
 
 	private void nastaveniShaderuEnd(){
 
+		glUseProgram(shaderProgramKonec);
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		glViewport(0, 0, width, height);
 
-		glClearColor(255, 255, 255, 1);
+		glClearColor(152, 124, 126, 1);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the framebuffer
 
 		texture.bind(shaderProgramKonec, "uTexture0", 0);
 		texture2.bind(shaderProgramKonec,"uTexture1",1);
 		renderTarget.getColorTexture(0).bind(shaderProgramKonec,"uTexture2",2);
 		// set the default render target (screen)
-		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glViewport(0, 0, width, height);
-
-		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the framebuffer
 
 		buffers.draw(GL_TRIANGLES, shaderProgramKonec);
 
 		//nahrani dalsiho snimku
 		buffer = videoGrabber.grabImage();
 	}
-
-
-
-	//prepocet na hsb barevny model
-	private Point3D rgbToHsb(Col a)	{
-		float r = ((float)a.getR());
-		float g = ((float)a.getG());
-		float b = ((float)a.getB());
-
-		float maxn = Math.max(r, Math.max(g, b));
-		float minn = Math.min(r, Math.min(g, b));
-
-		float h = 0.0f;
-		if (maxn == r && g >= b)
-		{
-			if (maxn - minn == 0.0)
-			{
-				h = 0.0f;
-			}else
-			{
-				h = (float) (60.0 * ((g - b) / (maxn - minn)));
-			}
-		}else if (maxn == r && g < b)
-		{
-			h = (float)(60.0 * ((g - b) / (maxn - minn)) + 360.0);
-		}else if (maxn == g)
-		{
-			h = (float)(60.0 * ((b - r) / (maxn - minn)) + 120.0);
-		}else if (maxn == b)
-		{
-			h = (float)(60.0 * ((r - g) / (maxn - minn)) + 240.0);
-		}
-
-		float s = (float) ((maxn == 0.0) ? 0.0 : (1.0 - ((float)minn / (float)maxn)));
-
-		return new Point3D((float)h, (float)(s*100.0), (float)(maxn*100.0));
-	}
-
-
 
 	//pomocna promena pro posilani promenych do shaderu
 	private void glUniform3fShort(int a,Point3D b){
