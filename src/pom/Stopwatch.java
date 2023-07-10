@@ -17,7 +17,9 @@ public class Stopwatch {
     public void betweenTime(){
         System.out.println("StopWatch: " + (System.currentTimeMillis() - start));
     }
-
+    public double betweenTimeRet(){
+        return  System.currentTimeMillis() - start;
+    }
     public void endTime(){
         double pom = System.currentTimeMillis() - start;
         start = 0;

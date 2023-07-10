@@ -16,7 +16,7 @@ void main()
     vec4 b = texture(uTexture1, texCoord);
     vec4 c = texture(uTexture2, yRotate);
     //&& (c.y > 0.35f && c.z > 0.35f)
-    if(c.w == 1 ){
+    if(c.w == 1 && c.y > 0.35f && c.z > 0.35f){
         FragColor = b;
     }else{
         FragColor = a;

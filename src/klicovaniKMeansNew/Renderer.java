@@ -9,15 +9,21 @@ import opencvutils.VideoGrabber;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.glfw.*;
 import pom.AbstractRenderer;
+import pom.Stopwatch;
 import transforms.Col;
 import transforms.Point3D;
 import transforms.Vec3D;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.DoubleBuffer;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Date;
 
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -43,8 +49,12 @@ public class Renderer extends AbstractRenderer{
 	private OGLRenderTarget renderTarget;
 
 	public Point3D[] kmeans = new Point3D[3];
+	public Stopwatch stopwatch;
 
-	
+	private OGLRenderTarget saveRenderTarget;
+	private int framePosition = 0;
+
+
 	private final GLFWKeyCallback   keyCallback = new GLFWKeyCallback() {
 		@Override
 		public void invoke(long window, int key, int scancode, int action, int mods) {
@@ -172,10 +182,12 @@ public class Renderer extends AbstractRenderer{
 	}
 	@Override
 	public void init() {
+		stopwatch = new Stopwatch();
+		stopwatch.startTime();
 		glClearColor(0,0,0,1);
 
 		//prirazeni popredi
-		videoGrabber = new VideoGrabber("./res/textures/video2.mov");
+		videoGrabber = new VideoGrabber("./res/textures/video3.mp4");
 
 		videoImageFormat = new OpenCVImageFormat(3);
 
@@ -188,8 +200,8 @@ public class Renderer extends AbstractRenderer{
 		shaderProgramKonec = ShaderUtils.loadProgram("/newShaderKMeans/mujKonec");
 
 		glUseProgram(this.shaderProgramStart);
-		width = 600;
-		height = 800;
+		width = 800;
+		height = 600;
 
 		renderTarget = new OGLRenderTarget(width, height, 3);
 
@@ -206,10 +218,9 @@ public class Renderer extends AbstractRenderer{
 		cent2 = glGetUniformLocation(shaderProgramStart, "cent2");
 		cent3 = glGetUniformLocation(shaderProgramStart, "cent3");
 
-		//nastaveniShaderuStart();
-
 		textRenderer = new OGLTextRenderer(width, height);
 
+		stopwatch.resetTime();
 }
 	
 	@Override
@@ -217,8 +228,6 @@ public class Renderer extends AbstractRenderer{
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glDisable(GL_CULL_FACE);
 		glEnable(GL_DEPTH_TEST);
-		
-		glViewport(0, 0, width, height);
 
 		//rozdeloveni videa na jednotlive snimky
 		if (buffer != null) {
@@ -227,8 +236,11 @@ public class Renderer extends AbstractRenderer{
 			} else {
 				texture.setTextureBuffer(videoImageFormat, buffer);
 			}
+			framePosition++;
 		} else {
 			videoGrabber.rewind();
+			stopwatch.resetTime();
+			throw new RuntimeException("End it");
 		}
 
 		nastaveniShaderuStart();
@@ -256,57 +268,34 @@ public class Renderer extends AbstractRenderer{
 
 		glViewport(0, 0, width, height);
 
-
 		buffers.draw(GL_TRIANGLES, shaderProgramStart);
 
-		//var colooo = new Col( renderTarget.getColorTexture(0).toBufferedImage().getRGB(10,10));
-		//System.out.println(colooo);
 		calculateKmeans();
 	}
 	public void calculateKmeans(){
 		for (int i = 0; i < 3; i++)
 		{
 			var avrColor = renderTarget.getColorTexture(i).getAvrColor();
-			//glGenerateMipmap(GL_TEXTURE_2D);
-			//var width = renderTarget.getColorTexture(i).getWidth();
-			//var height = renderTarget.getColorTexture(i).getHeight();
-			//var totalMipmapLevels = (int)(1 + Math.floor(log2(Math.max(width, height))));
-			//var pixel = new float[4];
-			//glGetTexImage(GL_TEXTURE_2D,1-totalMipmapLevels,GL_RGBA,GL_UNSIGNED_BYTE,pixel);
-//
-			//var large = width * height;
-			//var pointX = pixel[0] * (int)large;
-			//var pointY = pixel[1] * (int)large;
-			//var pointZ = pixel[2] * (int)large;
-			//var pointW = pixel[3] * (int)large;
-			//gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)GLEnum.Nearest);
-			//gl.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)GLEnum.Nearest);
-
 
 			kmeans[i]= new Point3D(avrColor[0],avrColor[1],avrColor[2],1);
-			System.out.println(i + " " + kmeans[i].toString());
 		}
 	}
 
 
 	private void nastaveniShaderuEnd(){
-
 		glUseProgram(shaderProgramKonec);
+
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		glViewport(0, 0, width, height);
 
 		glClearColor(152, 124, 126, 1);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the framebuffer
 
 		texture.bind(shaderProgramKonec, "uTexture0", 0);
 		texture2.bind(shaderProgramKonec,"uTexture1",1);
-		renderTarget.getColorTexture(0).bind(shaderProgramKonec,"uTexture2",2);
+		renderTarget.getColorTexture(2).bind(shaderProgramKonec,"uTexture2",2);
 		// set the default render target (screen)
-
 		buffers.draw(GL_TRIANGLES, shaderProgramKonec);
 
-		//nahrani dalsiho snimku
-		buffer = videoGrabber.grabImage();
 	}
 
 	//pomocna promena pro posilani promenych do shaderu
@@ -316,16 +305,6 @@ public class Renderer extends AbstractRenderer{
 				(float) b.getX(),
 				(float) b.getY(),
 				(float) b.getZ());
-	}
-
-	public static int log2(int N)
-	{
-
-		// calculate log2 N indirectly
-		// using log() method
-		int result = (int)(Math.log(N) / Math.log(2));
-
-		return result;
 	}
 	void createKmeans(){
 		kmeans[0] = new Point3D(0.7f, 0.2f, 0.5f);

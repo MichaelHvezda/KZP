@@ -9,10 +9,14 @@ import opencvutils.VideoGrabber;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.glfw.*;
 import pom.AbstractRenderer;
+import pom.Stopwatch;
 import transforms.Col;
 import transforms.Point3D;
 
+import javax.imageio.ImageIO;
 import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.DoubleBuffer;
@@ -42,8 +46,12 @@ public class Renderer extends AbstractRenderer{
 	private OpenCVImageFormat videoImageFormat;
 	private ByteBuffer buffer;
 	private OGLRenderTarget renderTarget;
+	public Stopwatch stopwatch;
 
-	
+
+	private OGLRenderTarget saveRenderTarget;
+	private int framePosition = 0;
+
 	private GLFWKeyCallback   keyCallback = new GLFWKeyCallback() {
 		@Override
 		public void invoke(long window, int key, int scancode, int action, int mods) {
@@ -172,10 +180,12 @@ public class Renderer extends AbstractRenderer{
 
 	@Override
 	public void init() {
+		stopwatch = new Stopwatch();
+		stopwatch.startTime();
 		glClearColor(0,0,0,1);
 
 		//prirazeni popredi
-		videoGrabber = new VideoGrabber("./res/textures/video2.mov");
+		videoGrabber = new VideoGrabber("./res/textures/video3.mp4");
 
 		videoImageFormat = new OpenCVImageFormat(3);
 
@@ -187,10 +197,10 @@ public class Renderer extends AbstractRenderer{
 		shaderProgram = ShaderUtils.loadProgram("/mujShaderKMeansUpraveny/mujStart");
 		
 		glUseProgram(this.shaderProgram);
-		width = 600;
-		height = 800;
+		width = 800;
+		height = 600;
 		renderTarget = new OGLRenderTarget(width, height);
-
+		saveRenderTarget =new OGLRenderTarget(width, height);
 		try {
             //prirazeni pozadi
 			texture2= new OGLTexture2D("textures/back1.jpg");
@@ -210,6 +220,7 @@ public class Renderer extends AbstractRenderer{
 		textRenderer = new OGLTextRenderer(width, height);
 
 		glUniform3fShort(colorBack,new Point3D(new Col(texture.toBufferedImage().getRGB(10,10))));
+		stopwatch.resetTime();
 }
 	
 	@Override
@@ -217,7 +228,7 @@ public class Renderer extends AbstractRenderer{
 		glDisable(GL_CULL_FACE);
 		glEnable(GL_DEPTH_TEST);
 		
-		glViewport(0, 0, width, height);
+		//glViewport(0, 0, width, height);
 
 		// set the current shader to be used
 		glUseProgram(shaderProgram);
@@ -229,8 +240,11 @@ public class Renderer extends AbstractRenderer{
 			} else {
 				texture.setTextureBuffer(videoImageFormat, buffer);
 			}
+			framePosition++;
 		} else {
 			videoGrabber.rewind();
+			stopwatch.resetTime();
+			throw new RuntimeException("End it");
 		}
 
 		// set our render target (texture)
@@ -242,16 +256,12 @@ public class Renderer extends AbstractRenderer{
 		texture.bind(shaderProgram, "textureID", 0);
 		texture2.bind(shaderProgram,"textureIP",1);
 
-		// set the default render target (screen)
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glViewport(0, 0, width, height);
-
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); // clear the framebuffer
-
 		buffers.draw(GL_TRIANGLES, shaderProgram);
 
-        //nahrani dalsiho snimku
 		buffer = videoGrabber.grabImage();
 	}
 
@@ -270,12 +280,12 @@ public class Renderer extends AbstractRenderer{
 
 		//vytvoreni seznamu pro hodnoty vzorku
 		ArrayList list = new ArrayList<Point3D>();
-
+		var textRam = texture.toBufferedImage();
 		//prohledani textury pro vytvoreni k-means
 		for(int i = 0; i<texture.getWidth();i=i+100){
 			System.out.println(i);
 			for(int u = 0; u<texture.getHeight();u=u+100){
-				list.add(new Point3D(rgbToHsb(new Col(texture.toBufferedImage().getRGB(i,u)))));
+				list.add(new Point3D(rgbToHsb(new Col(textRam.getRGB(i,u)))));
 				System.out.print(".");
 			}
 			System.out.println(i);
